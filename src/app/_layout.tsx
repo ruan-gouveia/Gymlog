@@ -1,7 +1,12 @@
+import { useEffect, useState } from 'react';
 import { DarkTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { cores } from '@/constants/tema';
+import { initDatabase } from '@/database';
+
+SplashScreen.preventAutoHideAsync();
 
 const temaNavegacao: Theme = {
   ...DarkTheme,
@@ -17,6 +22,27 @@ const temaNavegacao: Theme = {
 };
 
 export default function LayoutRaiz() {
+  const [bancoPronto, setBancoPronto] = useState(false);
+
+  useEffect(() => {
+    async function preparar() {
+      try {
+        initDatabase();
+        setBancoPronto(true);
+      } catch (error) {
+        console.error('[App] Falha ao inicializar o banco de dados:', error);
+      } finally {
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    preparar();
+  }, []);
+
+  if (!bancoPronto) {
+    return null;
+  }
+
   return (
     <ThemeProvider value={temaNavegacao}>
       <StatusBar style="light" />
