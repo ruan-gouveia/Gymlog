@@ -1,9 +1,9 @@
-import * as SQLite from 'expo-sqlite';
+import { openDatabaseSync } from 'expo-sqlite';
 
-export const NOME_BANCO = 'gymlog.db';
+import { NOME_BANCO, initDatabase, inicializarBanco } from './initDatabase';
 
-export const db = SQLite.openDatabaseSync(NOME_BANCO);
+export const db = openDatabaseSync(NOME_BANCO);
+db.execSync('PRAGMA foreign_keys = ON;');
 
-export function inicializarBanco(): void {
-  db.execSync('PRAGMA foreign_keys = ON;');
-}
+export { NOME_BANCO, initDatabase, inicializarBanco };
+export * from './tipos';
