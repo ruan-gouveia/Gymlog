@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import type { ComponentProps } from 'react';
