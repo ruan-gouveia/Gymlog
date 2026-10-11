@@ -1,5 +1,4 @@
-import { openDatabaseSync } from 'expo-sqlite';
-import { NOME_BANCO } from './initDatabase';
+import { db } from './index';
 
 export type NovoTreino = {
   nome: string;
@@ -10,9 +9,7 @@ export type NovoTreino = {
 };
 
 export function inserirTreino(treino: NovoTreino): void {
-  const db = openDatabaseSync(NOME_BANCO);
-
-  // O runSync gerencia a inserção nativamente e resolve o NullPointerException no Android
+    
   db.runSync(
     `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes) VALUES (?, ?, ?, ?, ?)`,
     [
