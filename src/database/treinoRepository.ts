@@ -22,10 +22,7 @@ export function salvarTreinoComExercicios(
 ): number {
   let treinoId = 0;
 
-  
-  db.runSync('BEGIN TRANSACTION;');
-
-  try {
+  db.withTransactionSync(() => {
     const resultadoTreino = db.runSync(
       `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes) 
        VALUES (?, ?, ?, ?, ?)`,
@@ -54,12 +51,7 @@ export function salvarTreinoComExercicios(
         ]
       );
     }
-
-    db.runSync('COMMIT;');
-  } catch (error) {
-    db.runSync('ROLLBACK;');
-    throw error;
-  }
+  });
 
   return treinoId;
 }
