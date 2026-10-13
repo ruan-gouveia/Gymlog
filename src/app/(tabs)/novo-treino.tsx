@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -91,7 +91,16 @@ export default function NovoTreino() {
       clearWorkout();
 
       Alert.alert('Sucesso', 'Treino e exercícios gravados com sucesso!', [
-        { text: 'OK', onPress: () => router.back() },
+        {
+          text: 'OK',
+          onPress: () => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)');
+            }
+          },
+        },
       ]);
     } catch (error) {
       console.error('[Novo Treino] Erro na transação SQLite:', error);
@@ -201,12 +210,17 @@ export default function NovoTreino() {
                   key={ex.id}
                   className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex-row items-center justify-between"
                 >
-                  <View className="flex-1 pr-3">
-                    <Text className="text-base font-bold text-slate-800">{ex.nome}</Text>
-                    <Text className="text-xs text-slate-500 mt-0.5">
-                      {ex.series.length} série(s) • {ex.grupo}
-                      {ex.descanso ? ` • ${ex.descanso}s descanso` : ''}
-                    </Text>
+                  <View className="flex-row items-center flex-1 pr-3">
+                    <View className="w-10 h-10 rounded-xl bg-indigo-50 items-center justify-center mr-3">
+                      <MaterialCommunityIcons name="dumbbell" size={20} color="#5c7cfa" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-base font-bold text-slate-800">{ex.nome}</Text>
+                      <Text className="text-xs text-slate-500 mt-0.5">
+                        {ex.series.length} série(s) • {ex.grupo}
+                        {ex.descanso ? ` • ${ex.descanso}s descanso` : ''}
+                      </Text>
+                    </View>
                   </View>
                   <TouchableOpacity
                     onPress={() => removeExercise(ex.id)}
@@ -233,7 +247,11 @@ export default function NovoTreino() {
               variant="outline" 
               onPress={() => {
                 clearWorkout();
-                router.back();
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)');
+                }
               }} 
               disabled={isSubmitting} 
             />

@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -45,6 +44,10 @@ const registroSchema = z.object({
 
 type RegistroFormData = z.infer<typeof registroSchema>;
 
+function gerarIdExercicio(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
 export default function RegistrarExercicio() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string; nome: string; grupo: string }>();
@@ -72,9 +75,8 @@ export default function RegistrarExercicio() {
   });
 
   function onSubmit(data: RegistroFormData) {
-    
     addExercise({
-      id: `${Date.now()}-${Math.random()}`,
+      id: gerarIdExercicio(),
       exercicioCatalogoId: params.id || '1',
       nome: params.nome || 'Exercício',
       grupo: params.grupo || 'Geral',
@@ -86,14 +88,11 @@ export default function RegistrarExercicio() {
       descanso: data.descanso ? Number(data.descanso) : undefined,
     });
 
-    Alert.alert('Sucesso', 'Exercício adicionado ao treino!', [
-      {
-        text: 'OK',
-        onPress: () => {
-          router.navigate('/(tabs)/novo-treino');
-        },
-      },
-    ]);
+    if (router.canDismiss()) {
+      router.dismiss(2);
+    } else {
+      router.replace('/(tabs)/novo-treino');
+    }
   }
 
   return (
