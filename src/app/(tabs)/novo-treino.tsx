@@ -1,13 +1,23 @@
-import { zodResolver } from '@hookform/resolvers/zod';
+import React from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Controller, useForm } from 'react-hook-form';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { inserirTreino } from '@/database/treinoRepository';
-
+import { Button } from '@/components/ui/button';
+import { salvarTreinoComExercicios } from '@/database/treinoRepository';
+import { useWorkoutStore } from '@/stores/useWorkoutStore';
 
 const treinoSchema = z.object({
   data: z.string().min(1, 'A data é obrigatória.'),
@@ -30,6 +40,7 @@ type TreinoFormData = z.infer<typeof treinoSchema>;
 
 export default function NovoTreino() {
   const router = useRouter();
+  const { draftExercises, removeExercise, clearWorkout } = useWorkoutStore();
 
   const {
     control,
@@ -49,13 +60,26 @@ export default function NovoTreino() {
 
   const onSubmit = (data: TreinoFormData) => {
     try {
-      inserirTreino({
-        nome: data.nome,
-        data: data.data,
-        duracao: Number(data.duracao),
-        grupo_muscular: data.grupo_muscular,
-        observacoes: data.observacoes,
-      });
+      const exerciciosParaInserir = draftExercises.flatMap((ex) =>
+        ex.series.map((s) => ({
+          nome: ex.nome,
+          series: s.numero,
+          repeticoes: s.repeticoes,
+          carga: s.carga,
+          descanso: ex.descanso,
+        }))
+      );
+
+      salvarTreinoComExercicios(
+        {
+          nome: data.nome,
+          data: data.data,
+          duracao: Number(data.duracao),
+          grupo_muscular: data.grupo_muscular,
+          observacoes: data.observacoes,
+        },
+        exerciciosParaInserir
+      );
 
       reset({
         data: new Date().toLocaleDateString('pt-BR'),
@@ -64,13 +88,23 @@ export default function NovoTreino() {
         grupo_muscular: '',
         observacoes: '',
       });
+      clearWorkout();
 
-      Alert.alert('Sucesso', 'Treino criado com sucesso!', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert('Sucesso', 'Treino e exercícios gravados com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)');
+            }
+          },
+        },
       ]);
     } catch (error) {
-      console.error('[Novo Treino] Erro ao salvar:', error);
-      Alert.alert('Erro', 'Erro ao salvar o treino. Tente novamente.');
+      console.error('[Novo Treino] Erro na transação SQLite:', error);
+      Alert.alert('Erro', 'Erro ao salvar o treino completo. Tente novamente.');
     }
   };
 
@@ -167,11 +201,42 @@ export default function NovoTreino() {
         />
 
         <View className="mt-4 mb-8">
-          <Text className="text-slate-800 font-semibold mb-3">Exercícios</Text>
+          <Text className="text-slate-900 font-bold text-lg mb-3">Exercícios</Text>
+
+          {draftExercises.length > 0 && (
+            <View className="mb-4 gap-2.5">
+              {draftExercises.map((ex) => (
+                <View
+                  key={ex.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex-row items-center justify-between"
+                >
+                  <View className="flex-row items-center flex-1 pr-3">
+                    <View className="w-10 h-10 rounded-xl bg-indigo-50 items-center justify-center mr-3">
+                      <MaterialCommunityIcons name="dumbbell" size={20} color="#5c7cfa" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-base font-bold text-slate-800">{ex.nome}</Text>
+                      <Text className="text-xs text-slate-500 mt-0.5">
+                        {ex.series.length} série(s) • {ex.grupo}
+                        {ex.descanso ? ` • ${ex.descanso}s descanso` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => removeExercise(ex.id)}
+                    className="p-2 -mr-1"
+                  >
+                    <Feather name="trash-2" size={18} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
           <Button 
             title="+ Adicionar exercício" 
             variant="dashed"
-            onPress={() => Alert.alert('Aviso', 'Funcionalidade da próxima Issue.')}
+            onPress={() => router.push('/exercicio/selecionar')}
           />
         </View>
 
@@ -180,7 +245,14 @@ export default function NovoTreino() {
             <Button 
               title="Cancelar" 
               variant="outline" 
-              onPress={() => router.back()} 
+              onPress={() => {
+                clearWorkout();
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)');
+                }
+              }} 
               disabled={isSubmitting} 
             />
           </View>
