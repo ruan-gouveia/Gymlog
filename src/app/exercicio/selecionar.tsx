@@ -5,11 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import {
   EXERCICIOS_CATALOGO,
@@ -120,7 +119,7 @@ export default function SelecionarExercicio() {
           >
             <View className="flex-row items-center flex-1 pr-4">
               <View className="w-10 h-10 rounded-xl bg-indigo-50 items-center justify-center mr-3.5">
-                <Feather name="activity" size={20} color="#5c7cfa" />
+                <MaterialCommunityIcons name="dumbbell" size={20} color="#5c7cfa" />
               </View>
               <Text className="text-base font-medium text-slate-800 flex-1">
                 {item.nome}
