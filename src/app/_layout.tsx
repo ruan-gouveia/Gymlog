@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
 import { DarkTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 
-import '../global.css';
 import { cores } from '@/constants/tema';
-import { initDatabase } from '@/database';
+import { db, initDatabase } from '@/database';
+import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,7 +28,7 @@ export default function LayoutRaiz() {
   useEffect(() => {
     async function preparar() {
       try {
-        initDatabase();
+        initDatabase(db );
         setBancoPronto(true);
       } catch (error) {
         console.error('[App] Falha ao inicializar o banco de dados:', error);

@@ -1,21 +1,20 @@
-import React from 'react';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
+import { Controller, useForm } from 'react-hook-form';
 import {
-  View,
-  Text,
-  ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { salvarTreinoComExercicios } from '@/database/treinoRepository';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
 
@@ -91,7 +90,14 @@ export default function NovoTreino() {
       clearWorkout();
 
       Alert.alert('Sucesso', 'Treino e exercícios gravados com sucesso!', [
+        
+        // leva direto para a aba Histórico, sem depender de qual era a tela anterior.
         {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/historico'),
+        },
+
+       /*  {
           text: 'OK',
           onPress: () => {
             if (router.canGoBack()) {
@@ -100,7 +106,7 @@ export default function NovoTreino() {
               router.replace('/(tabs)');
             }
           },
-        },
+        }, */
       ]);
     } catch (error) {
       console.error('[Novo Treino] Erro na transação SQLite:', error);
