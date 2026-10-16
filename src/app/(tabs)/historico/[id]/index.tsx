@@ -1,10 +1,11 @@
+import { buscarTreinoPorId, type TreinoDetalhe } from '@/database/treinoConsultas';
+import { excluirTreino } from '@/database/treinoRepository';
+import { showToast } from '@/stores/toastStore';
+import { formatarData, formatarDuracao, formatarVolume, resumirSeries } from '@/utils/formatacao';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-
-import { buscarTreinoPorId, type TreinoDetalhe } from '@/database/treinoConsultas';
-import { formatarData, formatarDuracao, formatarVolume, resumirSeries } from '@/utils/formatacao';
-import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -38,6 +39,26 @@ export default function DetalhesTreino() {
       }
     }, [id])
   );
+
+  function confirmarExclusao() {
+    Alert.alert('Excluir treino', 'Tem certeza que deseja excluir este treino?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => {
+          try {
+            excluirTreino(Number(id));
+            showToast('Treino excluído com sucesso!');
+            router.replace('/historico');
+          } catch (error) {
+            console.error('[Detalhes] Erro ao excluir treino:', error);
+            showToast('Erro ao excluir o treino.', 'erro');
+          }
+        },
+      },
+    ]);
+  }
 
   const cabecalho = (
     <Pressable 
@@ -114,10 +135,10 @@ export default function DetalhesTreino() {
             className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#5c7cfa]">
             <Text className="text-base font-semibold text-white">Editar</Text>
           </Pressable>
+
           <Pressable
             accessibilityRole="button"
-            // TODO: implementar exclusão (confirmação + DELETE em cascata) na issue de Delete.
-            onPress={() => Alert.alert('Em breve', 'A exclusão será implementada em outra issue.')}
+            onPress={confirmarExclusao}
             className="h-12 flex-1 items-center justify-center rounded-2xl border border-indigo-100 bg-white">
             <Text className="text-base font-semibold text-slate-900">Excluir</Text>
           </Pressable>

@@ -33,6 +33,7 @@ export type SerieDetalhe ={
     numero: number;
     repeticoes: number;
     carga: number;
+    descanso: number | null;
 };
 
 export type ExercicioDetalhe ={
@@ -53,6 +54,7 @@ type LinhaTreinoExercicio = Treino & {
     numero_serie: number | null;
     repeticoes: number | null;
     carga: number | null;
+    descanso: number | null;
 };
 
 export function buscarTreinoPorId(id: number): TreinoDetalhe | null {
@@ -63,7 +65,8 @@ export function buscarTreinoPorId(id: number): TreinoDetalhe | null {
             e.nome AS exercicio_nome,
             e.series AS numero_serie,
             e.repeticoes,
-            e.carga
+            e.carga,
+            e.descanso
         FROM treinos t
         LEFT JOIN exercicios e ON e.treino_id = t.id
         WHERE t.id = ?
@@ -85,6 +88,7 @@ export function buscarTreinoPorId(id: number): TreinoDetalhe | null {
             numero: l.numero_serie!,
             repeticoes: l.repeticoes!,
             carga: l.carga!,
+            descanso: l.descanso,
         };
 
         volume += serie.repeticoes * serie.carga;
