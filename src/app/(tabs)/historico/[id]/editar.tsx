@@ -24,7 +24,6 @@ export default function EditarTreino() {
  const carregamento = useMemo<Carregamento>(() => {
   try {
     const treino = Number.isInteger(treinoId) ? buscarTreinoPorId(treinoId) : null;
-    console.log('TREINO:', JSON.stringify(treino, null, 2)); // 👈 NOVO
     if (!treino) return { erro: 'Treino não encontrado.' };
     return { valores: detalheParaFormulario(treino) };
   } catch (error) {

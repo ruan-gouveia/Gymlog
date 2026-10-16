@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 
+import { Toast } from '@/components/ui/Toast';
 import { cores } from '@/constants/tema';
 import { db, initDatabase } from '@/database';
 import '../global.css';
@@ -58,6 +59,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="exercicio/selecionar" />
         <Stack.Screen name="exercicio/registrar" />
       </Stack>
+      <Toast />
     </ThemeProvider>
   );
 }
