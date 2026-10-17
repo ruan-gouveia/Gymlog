@@ -1,9 +1,8 @@
-import { openDatabaseSync } from 'expo-sqlite';
+import { NOME_BANCO, initDatabase, inicializarBanco, migrarBanco } from './initDatabase';
+export { db } from './conexao';
 
-import { NOME_BANCO, initDatabase, inicializarBanco } from './initDatabase';
-
-export const db = openDatabaseSync(NOME_BANCO);
-db.execSync('PRAGMA foreign_keys = ON;');
-
-export { NOME_BANCO, initDatabase, inicializarBanco };
+export { NOME_BANCO, initDatabase, inicializarBanco, migrarBanco };
 export * from './tipos';
+export * from './treinoRepository';
+export * from './configuracoesRepository';
+export * from './treinoConsultas';

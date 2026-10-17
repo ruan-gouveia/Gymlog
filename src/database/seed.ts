@@ -1,4 +1,4 @@
-import { db } from './index';
+import { db } from './conexao';
 
 type ExercicioSeed = {
   nome: string;
@@ -29,25 +29,22 @@ export function popularBancoComDadosDeTeste(): void {
     console.log('[Seed] Iniciando população do banco de dados com dados de teste variados...');
 
     db.withTransactionSync(() => {
-      // Limpa dados anteriores para garantir ambiente limpo e determinístico
       db.runSync('DELETE FROM exercicios;');
       db.runSync('DELETE FROM treinos;');
 
-      const hoje = new Date(2026, 9, 16); // 16 de Outubro de 2026
+      const hoje = new Date(2026, 9, 16);
 
       const treinosParaInserir: TreinoSeed[] = [];
 
-      // 6 semanas, 5 treinos por semana = 30 treinos com distribuição variada de grupos
       const gruposPorSemana = [
-        ['Peito', 'Costas', 'Pernas', 'Peito', 'Braços'],   // Semana 1
-        ['Pernas', 'Costas', 'Peito', 'Ombros', 'Costas'],   // Semana 2
-        ['Peito', 'Pernas', 'Costas', 'Peito', 'Braços'],   // Semana 3
-        ['Costas', 'Peito', 'Pernas', 'Ombros', 'Peito'],   // Semana 4
-        ['Pernas', 'Costas', 'Peito', 'Braços', 'Pernas'],   // Semana 5
-        ['Peito', 'Costas', 'Pernas', 'Ombros', 'Peito'],   // Semana 6
+        ['Peito', 'Costas', 'Pernas', 'Peito', 'Braços'],
+        ['Pernas', 'Costas', 'Peito', 'Ombros', 'Costas'],
+        ['Peito', 'Pernas', 'Costas', 'Peito', 'Braços'],
+        ['Costas', 'Peito', 'Pernas', 'Ombros', 'Peito'],
+        ['Pernas', 'Costas', 'Peito', 'Braços', 'Pernas'],
+        ['Peito', 'Costas', 'Pernas', 'Ombros', 'Peito'],
       ];
 
-      // Variações realistas semanais para simular progressão, regressão (dias ruins/deload) e repetições distintas
       const perfilSemana = [
         { repPrincipal: 12, fatorCarga: 1.0, multExercicios: 3, duracaoBase: 45, obs: 'Adaptação e técnica' },
         { repPrincipal: 10, fatorCarga: 1.15, multExercicios: 4, duracaoBase: 55, obs: 'Cargas subindo com consistência' },
@@ -209,11 +206,10 @@ export function popularBancoComDadosDeTeste(): void {
         });
       }
 
-      // Executa os inserts no SQLite
       for (const t of treinosParaInserir) {
         const res = db.runSync(
-          `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes)
-           VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes, status, horario, repetir)
+           VALUES (?, ?, ?, ?, ?, 'concluido', '18:00', 'uma_vez')`,
           [t.nome, t.data, t.duracao, t.grupo_muscular, t.observacoes]
         );
 
@@ -221,12 +217,17 @@ export function popularBancoComDadosDeTeste(): void {
 
         for (const e of t.exercicios) {
           db.runSync(
-            `INSERT INTO exercicios (treino_id, nome, series, repeticoes, carga, descanso)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO exercicios (treino_id, nome, series, repeticoes, carga, descanso, concluida)
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
             [treinoId, e.nome, e.series, e.repeticoes, e.carga, e.descanso]
           );
         }
       }
+
+      db.runSync(`
+        INSERT OR IGNORE INTO configuracoes_usuario (id, meta_semanal, nome_usuario, lembretes_ativo, horario_lembretes, dias_lembretes)
+        VALUES (1, 3, 'Matheus Silva', 1, '18:00', 'Seg, Qua e Sex');
+      `);
 
       console.log(`[Seed] Sucesso: ${treinosParaInserir.length} treinos variados inseridos nas últimas 6 semanas!`);
     });

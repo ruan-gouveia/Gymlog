@@ -1,4 +1,4 @@
-import { db } from './index';
+import { db } from './conexao';
 
 export type ResumoEstatisticas = {
   totalTreinos: number;
