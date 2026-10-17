@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Toast } from '@/components/ui/Toast';
 import { cores } from '@/constants/tema';
 import { db, initDatabase } from '@/database';
+import { popularBancoComDadosDeTeste } from '@/database/seed';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
@@ -29,7 +30,10 @@ export default function LayoutRaiz() {
   useEffect(() => {
     async function preparar() {
       try {
-        initDatabase(db );
+        initDatabase(db);
+        if (__DEV__) {
+          popularBancoComDadosDeTeste();
+        }
         setBancoPronto(true);
       } catch (error) {
         console.error('[App] Falha ao inicializar o banco de dados:', error);
