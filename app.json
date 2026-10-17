@@ -33,6 +33,12 @@
           "imageWidth": 76
         }
       ],
+      [
+        "expo-navigation-bar",
+        {
+          "style": "light"
+        }
+      ],
       "expo-sqlite"
     ],
     "experiments": {
