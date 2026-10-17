@@ -96,9 +96,7 @@ export default function LayoutRaiz() {
           }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="exercicio/selecionar" />
-          <Stack.Screen name="exercicio/registrar" />
+          <Stack.Screen name="(tabs)" /> 
         </Stack>
         <Toast />
       </ThemeProvider>
