@@ -15,7 +15,9 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { parseDataBr } from '@/database';
 import { salvarTreinoComExercicios } from '@/database/treinoRepository';
+import { showToast } from '@/stores/toastStore';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
 
 const treinoSchema = z.object({
@@ -69,6 +71,13 @@ export default function NovoTreino() {
         }))
       );
 
+      const dt = parseDataBr(data.data);
+      dt.setHours(23, 59, 59, 999);
+      const hojeInicio = new Date();
+      hojeInicio.setHours(0, 0, 0, 0);
+      const ehHojeOuFuturo = dt.getTime() >= hojeInicio.getTime();
+      const statusFinal = ehHojeOuFuturo ? 'agendado' : 'concluido';
+
       salvarTreinoComExercicios(
         {
           nome: data.nome,
@@ -76,6 +85,8 @@ export default function NovoTreino() {
           duracao: Number(data.duracao),
           grupo_muscular: data.grupo_muscular,
           observacoes: data.observacoes,
+          status: statusFinal,
+          horario: '18:00',
         },
         exerciciosParaInserir
       );
@@ -89,27 +100,10 @@ export default function NovoTreino() {
       });
       clearWorkout();
 
-      Alert.alert('Sucesso', 'Treino e exercícios gravados com sucesso!', [
-        
-        // leva direto para a aba Histórico, sem depender de qual era a tela anterior.
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)/historico'),
-        },
-
-       /*  {
-          text: 'OK',
-          onPress: () => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/(tabs)');
-            }
-          },
-        }, */
-      ]);
+      showToast(ehHojeOuFuturo ? 'Treino agendado com sucesso!' : 'Treino registrado com sucesso!');
+      router.replace('/(tabs)');
     } catch (error) {
-      console.error('[Novo Treino] Erro na transação SQLite:', error);
+      console.error('[Novo Treino] Erro ao salvar treino:', error);
       Alert.alert('Erro', 'Erro ao salvar o treino completo. Tente novamente.');
     }
   };
