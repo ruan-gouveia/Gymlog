@@ -1,4 +1,5 @@
-import { db } from './index';
+import { db } from './conexao';
+import type { RepetirTreino, StatusTreino } from './tipos';
 
 export type NovoTreino = {
   nome: string;
@@ -6,6 +7,9 @@ export type NovoTreino = {
   duracao: number;
   grupo_muscular: string;
   observacoes?: string;
+  status?: StatusTreino;
+  horario?: string | null;
+  repetir?: RepetirTreino | string;
 };
 
 export type ExercicioParaSalvar = {
@@ -14,14 +18,38 @@ export type ExercicioParaSalvar = {
   repeticoes: number;
   carga: number;
   descanso?: number;
+  concluida?: number;
 };
+
+function formatarHoraAtual(): string {
+  const agora = new Date();
+  const horas = String(agora.getHours()).padStart(2, '0');
+  const minutos = String(agora.getMinutes()).padStart(2, '0');
+  return `${horas}:${minutos}`;
+}
+
+function formatarDataHoje(): string {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, '0');
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const ano = agora.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
 
 function inserirExercicios(treinoId: number, exercicios: ExercicioParaSalvar[]): void {
   for (const ex of exercicios) {
     db.runSync(
-      `INSERT INTO exercicios (treino_id, nome, series, repeticoes, carga, descanso) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [treinoId, ex.nome, ex.series, ex.repeticoes, ex.carga, ex.descanso ?? null]
+      `INSERT INTO exercicios (treino_id, nome, series, repeticoes, carga, descanso, concluida) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        treinoId,
+        ex.nome,
+        ex.series,
+        ex.repeticoes,
+        ex.carga,
+        ex.descanso ?? null,
+        ex.concluida ?? 0,
+      ]
     );
   }
 }
@@ -33,10 +61,23 @@ export function salvarTreinoComExercicios(
   let treinoId = 0;
 
   db.withTransactionSync(() => {
+    const status = treino.status ?? 'concluido';
+    const horario = treino.horario ?? null;
+    const repetir = treino.repetir ?? 'uma_vez';
+
     const resultadoTreino = db.runSync(
-      `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [treino.nome, treino.data, treino.duracao, treino.grupo_muscular, treino.observacoes ?? null]
+      `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes, status, horario, repetir) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        treino.nome,
+        treino.data,
+        treino.duracao,
+        treino.grupo_muscular,
+        treino.observacoes ?? null,
+        status,
+        horario,
+        repetir,
+      ]
     );
 
     treinoId = resultadoTreino.lastInsertRowId;
@@ -54,15 +95,105 @@ export function atualizarTreinoComExercicios(
   db.withTransactionSync(() => {
     db.runSync(
       `UPDATE treinos
-          SET nome = ?, data = ?, duracao = ?, grupo_muscular = ?, observacoes = ?
+          SET nome = ?,
+              data = ?,
+              duracao = ?,
+              grupo_muscular = ?,
+              observacoes = ?,
+              status = COALESCE(?, status),
+              horario = COALESCE(?, horario),
+              repetir = COALESCE(?, repetir)
         WHERE id = ?`,
-      [treino.nome, treino.data, treino.duracao, treino.grupo_muscular, treino.observacoes ?? null, id]
+      [
+        treino.nome,
+        treino.data,
+        treino.duracao,
+        treino.grupo_muscular,
+        treino.observacoes ?? null,
+        treino.status ?? null,
+        treino.horario ?? null,
+        treino.repetir ?? null,
+        id,
+      ]
     );
 
-    
     db.runSync('DELETE FROM exercicios WHERE treino_id = ?', [id]);
     inserirExercicios(id, exercicios);
   });
+}
+
+export function agendarTreino(
+  treino: NovoTreino,
+  exercicios: ExercicioParaSalvar[]
+): number {
+  return salvarTreinoComExercicios(
+    {
+      ...treino,
+      status: 'agendado',
+      horario: treino.horario ?? formatarHoraAtual(),
+      repetir: treino.repetir ?? 'uma_vez',
+    },
+    exercicios
+  );
+}
+
+export function concluirTreinoAoVivo(
+  id: number,
+  duracaoRealMinutos?: number,
+  exerciciosExecutados?: ExercicioParaSalvar[]
+): void {
+  db.withTransactionSync(() => {
+    if (duracaoRealMinutos !== undefined) {
+      db.runSync(
+        `UPDATE treinos SET status = 'concluido', duracao = ? WHERE id = ?`,
+        [duracaoRealMinutos, id]
+      );
+    } else {
+      db.runSync(`UPDATE treinos SET status = 'concluido' WHERE id = ?`, [id]);
+    }
+
+    if (exerciciosExecutados && exerciciosExecutados.length > 0) {
+      db.runSync('DELETE FROM exercicios WHERE treino_id = ?', [id]);
+      inserirExercicios(
+        id,
+        exerciciosExecutados.map((ex) => ({
+          ...ex,
+          concluida: ex.concluida ?? 1,
+        }))
+      );
+    } else {
+      db.runSync(`UPDATE exercicios SET concluida = 1 WHERE treino_id = ?`, [id]);
+    }
+  });
+}
+
+export function reagendarTreinoParaHoje(id: number, novoHorario?: string): void {
+  const hoje = formatarDataHoje();
+
+  db.withTransactionSync(() => {
+    db.runSync(
+      `UPDATE treinos
+          SET data = ?,
+              status = 'agendado',
+              horario = COALESCE(?, horario)
+        WHERE id = ?`,
+      [hoje, novoHorario ?? null, id]
+    );
+  });
+}
+
+export function atualizarStatusTreino(id: number, novoStatus: StatusTreino): void {
+  db.withTransactionSync(() => {
+    db.runSync(`UPDATE treinos SET status = ? WHERE id = ?`, [novoStatus, id]);
+  });
+}
+
+export function marcarExercicioConcluido(
+  exercicioId: number,
+  concluida: boolean | number = 1
+): void {
+  const val = typeof concluida === 'boolean' ? (concluida ? 1 : 0) : concluida;
+  db.runSync(`UPDATE exercicios SET concluida = ? WHERE id = ?`, [val, exercicioId]);
 }
 
 export function excluirTreino(id: number): void {
