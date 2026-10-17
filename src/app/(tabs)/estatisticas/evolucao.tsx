@@ -21,6 +21,7 @@ import {
   type PontoEvolucaoExercicio,
 } from '@/database/estatisticasConsultas';
 import { formatarNumero, formatarVolume } from '@/utils/formatacao';
+import { useThemeStore } from '@/stores/useThemeStore';
 
 type MetricaTipo = 'Volume' | 'Carga' | 'Repetições';
 
@@ -38,6 +39,8 @@ type PontoSelecionado = {
 
 export default function Evolucao() {
   const router = useRouter();
+  const tema = useThemeStore((s) => s.tema);
+  const ehEscuro = tema === 'dark';
   const [metrica, setMetrica] = useState<MetricaTipo>('Carga');
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('semanas');
   const [versao, setVersao] = useState(0);
@@ -218,7 +221,7 @@ export default function Evolucao() {
   }, [pontos, valoresMetrica]);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <ScrollView
         className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
@@ -233,9 +236,9 @@ export default function Evolucao() {
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/estatisticas'))}
             className="mr-2 py-2"
           >
-            <Feather name="chevron-left" size={28} color="#0f172a" />
+            <Feather name="chevron-left" size={28} color="#5C7CFA" />
           </Pressable>
-          <Text className="text-2xl font-bold text-slate-900">Evolução</Text>
+          <Text className="text-2xl font-bold text-slate-900 dark:text-white">Evolução</Text>
         </View>
 
         {/* Pílulas de Seleção de Métrica */}
@@ -249,11 +252,15 @@ export default function Evolucao() {
                 accessibilityLabel={`Visualizar métrica ${m}`}
                 onPress={() => setMetrica(m)}
                 className={`rounded-full border px-5 py-2 ${
-                  ativo ? 'border-[#5c7cfa] bg-[#5c7cfa]' : 'border-indigo-100 bg-white'
+                  ativo
+                    ? 'border-[#5c7cfa] bg-[#5c7cfa]'
+                    : 'border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A]'
                 }`}
               >
                 <Text
-                  className={`text-sm font-semibold ${ativo ? 'text-white' : 'text-slate-600'}`}
+                  className={`text-sm font-semibold ${
+                    ativo ? 'text-white' : 'text-slate-600 dark:text-slate-300'
+                  }`}
                 >
                   {m}
                 </Text>
@@ -270,7 +277,7 @@ export default function Evolucao() {
         {/* Seletor de Exercício (quando há exercícios) */}
         {exercicios.length > 0 && (
           <View className="mb-4">
-            <Text className="mb-2 text-xs font-medium text-slate-500">Selecione o exercício</Text>
+            <Text className="mb-2 text-xs font-medium text-slate-400 dark:text-[#8E92B8]">Selecione o exercício</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
               {exercicios.map((ex) => {
                 const selecionado = ex.nome === exercicioSelecionado;
@@ -281,13 +288,13 @@ export default function Evolucao() {
                     onPress={() => setExercicioManual(ex.nome)}
                     className={`mr-2 rounded-xl border px-3.5 py-1.5 ${
                       selecionado
-                        ? 'border-indigo-300 bg-indigo-100'
-                        : 'border-slate-200 bg-slate-50'
+                        ? 'border-indigo-300 dark:border-[#5c7cfa] bg-indigo-100 dark:bg-[#23264D]'
+                        : 'border-slate-200 dark:border-[#23264D] bg-slate-50 dark:bg-[#14152D]'
                     }`}
                   >
                     <Text
                       className={`text-xs font-semibold ${
-                        selecionado ? 'text-[#3b5bdb]' : 'text-slate-700'
+                        selecionado ? 'text-[#3b5bdb] dark:text-[#7C93FF]' : 'text-slate-700 dark:text-slate-300'
                       }`}
                     >
                       {ex.nome}
@@ -323,13 +330,13 @@ export default function Evolucao() {
         ) : (
           <>
             {/* Card com o Gráfico */}
-            <View className="mb-5 rounded-3xl border border-indigo-100 bg-white p-4">
+            <View className="mb-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
                 <View className="flex-1 pr-2">
-                  <Text className="text-lg font-bold text-slate-900" numberOfLines={1}>
+                  <Text className="text-lg font-bold text-slate-900 dark:text-white" numberOfLines={1}>
                     {exercicioSelecionado || 'Exercício'}
                   </Text>
-                  <Text className="text-xs text-slate-500">
+                  <Text className="text-xs text-slate-400 dark:text-[#8E92B8]">
                     {subtituloMetrica} • {periodo === 'dias' ? '7 dias' : periodo === 'semanas' ? '4 semanas' : '6 meses'}
                   </Text>
                 </View>
@@ -427,9 +434,9 @@ export default function Evolucao() {
                         );
                       }}
                       chartConfig={{
-                        backgroundColor: '#ffffff',
-                        backgroundGradientFrom: '#ffffff',
-                        backgroundGradientTo: '#ffffff',
+                        backgroundColor: ehEscuro ? '#1C1E3A' : '#ffffff',
+                        backgroundGradientFrom: ehEscuro ? '#1C1E3A' : '#ffffff',
+                        backgroundGradientTo: ehEscuro ? '#1C1E3A' : '#ffffff',
                         decimalPlaces: 0,
                         formatYLabel: (y: string) => {
                           const num = Number(y);
@@ -445,17 +452,20 @@ export default function Evolucao() {
                           return String(Math.round(num));
                         },
                         color: (opacity = 1) => `rgba(92, 124, 250, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                        labelColor: (opacity = 1) =>
+                          ehEscuro
+                            ? `rgba(142, 146, 184, ${opacity})`
+                            : `rgba(100, 116, 139, ${opacity})`,
                         propsForDots: {
                           r: '5',
                           strokeWidth: '2',
                           stroke: '#5c7cfa',
-                          fill: '#ffffff',
+                          fill: ehEscuro ? '#1C1E3A' : '#ffffff',
                         },
                         propsForBackgroundLines: {
                           strokeDasharray: '4',
-                          stroke: '#94a3b8',
-                          strokeOpacity: 0.35,
+                          stroke: ehEscuro ? '#282B54' : '#94a3b8',
+                          strokeOpacity: ehEscuro ? 0.6 : 0.35,
                           strokeWidth: 1.2,
                         },
                       }}
@@ -522,18 +532,18 @@ export default function Evolucao() {
                     }
 
                     return (
-                      <View className="mt-4 rounded-3xl border border-indigo-100 bg-indigo-50/60 p-4">
+                      <View className="mt-4 rounded-3xl border border-indigo-100 dark:border-[#282B54] bg-indigo-50/60 dark:bg-[#14152D] p-4">
                         {/* Cabeçalho do Card */}
-                        <View className="flex-row items-center justify-between pb-2.5 border-b border-indigo-100/70">
+                        <View className="flex-row items-center justify-between pb-2.5 border-b border-indigo-100/70 dark:border-[#282B54]/70">
                           <View className="flex-row items-center gap-2">
                             <View className="h-7 w-7 items-center justify-center rounded-xl bg-[#5c7cfa]/20">
-                              <Feather name="trending-up" size={14} color="#4338ca" />
+                              <Feather name="trending-up" size={14} color="#5c7cfa" />
                             </View>
                             <View>
-                              <Text className="text-xs font-bold text-slate-800">
+                              <Text className="text-xs font-bold text-slate-800 dark:text-white">
                                 {ponto.rotulo} • {ponto.data}
                               </Text>
-                              <Text className="text-[11px] text-slate-500">{exercicioSelecionado}</Text>
+                              <Text className="text-[11px] text-slate-400 dark:text-[#8E92B8]">{exercicioSelecionado}</Text>
                             </View>
                           </View>
                           <Pressable
@@ -549,29 +559,29 @@ export default function Evolucao() {
 
                         {/* Valor principal da métrica */}
                         <View className="mt-3 flex-row items-baseline justify-between">
-                          <Text className="text-sm font-semibold text-slate-700">{subtituloMetrica}</Text>
-                          <Text className="text-xl font-bold text-[#4338ca]">
+                          <Text className="text-sm font-semibold text-slate-700 dark:text-slate-300">{subtituloMetrica}</Text>
+                          <Text className="text-xl font-bold text-[#5c7cfa]">
                             {formatarValorTooltip(valorAtual)}
                           </Text>
                         </View>
 
                         {/* Detalhes complementares da sessão */}
                         <View className="mt-2 flex-row flex-wrap items-center gap-2">
-                          <View className="flex-row items-center gap-1 rounded-lg bg-white px-2 py-1 border border-indigo-100/60">
+                          <View className="flex-row items-center gap-1 rounded-lg bg-white dark:bg-[#1C1E3A] px-2 py-1 border border-indigo-100/60 dark:border-[#282B54]">
                             <Feather name="disc" size={11} color="#64748b" />
-                            <Text className="text-[11px] font-medium text-slate-600">
+                            <Text className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
                               Carga máx: {formatarNumero(ponto.cargaMaxima)} kg
                             </Text>
                           </View>
-                          <View className="flex-row items-center gap-1 rounded-lg bg-white px-2 py-1 border border-indigo-100/60">
+                          <View className="flex-row items-center gap-1 rounded-lg bg-white dark:bg-[#1C1E3A] px-2 py-1 border border-indigo-100/60 dark:border-[#282B54]">
                             <Feather name="repeat" size={11} color="#64748b" />
-                            <Text className="text-[11px] font-medium text-slate-600">
+                            <Text className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
                               Reps máx: {ponto.repeticoesMax}
                             </Text>
                           </View>
-                          <View className="flex-row items-center gap-1 rounded-lg bg-white px-2 py-1 border border-indigo-100/60">
+                          <View className="flex-row items-center gap-1 rounded-lg bg-white dark:bg-[#1C1E3A] px-2 py-1 border border-indigo-100/60 dark:border-[#282B54]">
                             <Feather name="zap" size={11} color="#64748b" />
-                            <Text className="text-[11px] font-medium text-slate-600">
+                            <Text className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
                               Volume: {formatarVolume(ponto.volumeTotal)}
                             </Text>
                           </View>
@@ -581,10 +591,10 @@ export default function Evolucao() {
                         <View
                           className={`mt-3 flex-row items-center gap-2 rounded-2xl px-3 py-2.5 border ${
                             ehAumento
-                              ? 'bg-emerald-50 border-emerald-200/80'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/50'
                               : ehQueda
-                              ? 'bg-rose-50 border-rose-200/80'
-                              : 'bg-white border-indigo-100/70'
+                              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200/80 dark:border-rose-800/50'
+                              : 'bg-white dark:bg-[#1C1E3A] border-indigo-100/70 dark:border-[#282B54]'
                           }`}
                         >
                           <Feather
@@ -603,10 +613,10 @@ export default function Evolucao() {
                           <Text
                             className={`text-xs font-semibold flex-1 ${
                               ehAumento
-                                ? 'text-emerald-800'
+                                ? 'text-emerald-800 dark:text-emerald-300'
                                 : ehQueda
-                                ? 'text-rose-800'
-                                : 'text-slate-700'
+                                ? 'text-rose-800 dark:text-rose-300'
+                                : 'text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             {fraseDelta}

@@ -13,6 +13,7 @@ import {
 import { buscarTreinoPorId } from '@/database/treinoConsultas';
 import { atualizarTreinoComExercicios } from '@/database/treinoRepository';
 import { showToast } from '@/stores/toastStore';
+import { useThemeStore } from '@/stores/useThemeStore';
 
 type Carregamento = { valores: TreinoEdicaoValues } | { erro: string };
 
@@ -20,6 +21,8 @@ export default function EditarTreino() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const treinoId = Number(id);
+  const tema = useThemeStore((state) => state.tema);
+  const ehEscuro = tema === 'dark';
 
  const carregamento = useMemo<Carregamento>(() => {
   try {
@@ -45,7 +48,7 @@ export default function EditarTreino() {
   }
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Voltar"
@@ -53,8 +56,8 @@ export default function EditarTreino() {
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/historico'))}
         className="flex-row items-center px-5 pb-2 pt-3"
       >
-        <Feather name="chevron-left" size={26} color="#1e293b" />
-        <Text className="ml-1 text-xl font-bold text-slate-900">Editar treino</Text>
+        <Feather name="chevron-left" size={26} color={ehEscuro ? '#FFFFFF' : '#1e293b'} />
+        <Text className="ml-1 text-xl font-bold text-slate-900 dark:text-white">Editar treino</Text>
       </Pressable>
 
       {'valores' in carregamento ? (

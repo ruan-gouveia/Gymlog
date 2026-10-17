@@ -11,9 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 function CardResumo({rotulo, valor}: {rotulo: string; valor: string}) {
   return (
-    <View className="flex-1 rounded-2xl border border-indigo-100 bg-indigo-50 px-3 py-3">
-      <Text className="text-xs text-slate-500">{rotulo}</Text>
-      <Text  className="mt-1 text-lg font-bold text-slate-900">{valor}</Text>
+    <View className="flex-1 rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] px-3.5 py-3 shadow-sm shadow-slate-100 dark:shadow-none">
+      <Text className="text-xs font-medium text-slate-400 dark:text-[#8E92B8]">{rotulo}</Text>
+      <Text className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{valor}</Text>
     </View>
   )
 }
@@ -68,17 +68,17 @@ export default function DetalhesTreino() {
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/historico'))}
       className="flex-row items-center pb-2 pt-3"
     >
-      <Feather name="chevron-left" size={26} color="#1e293b" />
-      <Text className="ml-1 text-xl font-bold text-slate-900">Detalhes</Text>
+      <Feather name="chevron-left" size={26} color="#5C7CFA" />
+      <Text className="ml-1 text-xl font-bold text-slate-900 dark:text-white">Detalhes</Text>
     </Pressable>
   );
 
   if (!treino) {
     return (
-      <SafeAreaView edges={['top']} className="flex-1 bg-white px-5">
+      <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B] px-5">
         {cabecalho}
         {carregado && (
-          <Text className={`mt-8 text-center text-sm ${erro ? 'text-red-500' : 'text-slate-500'}`}>
+          <Text className={`mt-8 text-center text-sm ${erro ? 'text-red-500' : 'text-slate-400 dark:text-[#8E92B8]'}`}>
             {erro ?? 'Treino não encontrado.'}
           </Text>
         )}
@@ -87,13 +87,13 @@ export default function DetalhesTreino() {
   }
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 32, gap: 12 }}>
         {cabecalho}
 
         <View>
-          <Text className="text-2xl font-bold text-slate-900">{treino.nome}</Text>
-          <Text className="text-xs text-slate-500">{formatarData(treino.data)}</Text>
+          <Text className="text-2xl font-bold text-slate-900 dark:text-white">{treino.nome}</Text>
+          <Text className="text-xs font-medium text-slate-400 dark:text-[#8E92B8] mt-0.5">{formatarData(treino.data)}</Text>
         </View>
 
         <View className="flex-row gap-3">
@@ -106,22 +106,22 @@ export default function DetalhesTreino() {
         </View>
 
         {treino.exercicios.length === 0 && (
-          <Text className="text-sm text-slate-500">Nenhum exercício registrado neste treino.</Text>
+          <Text className="text-sm text-slate-400 dark:text-[#8E92B8]">Nenhum exercício registrado neste treino.</Text>
         )}
         {treino.exercicios.map((ex, index) => (
           <View
             key={`${ex.nome}-${index}`}
-            className="flex-row items-center justify-between rounded-2xl border border-indigo-100 bg-white px-4 py-3">
-            <Text className="flex-1 pr-3 text-sm font-semibold text-slate-900">{ex.nome}</Text>
-            <Text className="text-xs text-slate-600">{resumirSeries(ex.series)}</Text>
+            className="flex-row items-center justify-between rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] px-4 py-3 shadow-sm shadow-slate-100 dark:shadow-none">
+            <Text className="flex-1 pr-3 text-sm font-semibold text-slate-900 dark:text-white">{ex.nome}</Text>
+            <Text className="text-xs font-medium text-slate-500 dark:text-[#8E92B8]">{resumirSeries(ex.series)}</Text>
           </View>
         ))}
 
         {!!treino.observacoes && (
           <View>
-            <Text className="mb-1 text-xs text-slate-500">Observações</Text>
-            <View className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3">
-              <Text className="text-sm text-slate-900">{treino.observacoes}</Text>
+            <Text className="mb-1 text-xs font-medium text-slate-400 dark:text-[#8E92B8]">Observações</Text>
+            <View className="rounded-2xl border border-slate-200 dark:border-[#23264D] bg-slate-50 dark:bg-[#14152D] px-4 py-3">
+              <Text className="text-sm text-slate-900 dark:text-white">{treino.observacoes}</Text>
             </View>
           </View>
         )}
@@ -132,15 +132,15 @@ export default function DetalhesTreino() {
             onPress={() =>
               router.push({ pathname: '/historico/[id]/editar', params: { id: String(treino.id) } })
             }
-            className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#5c7cfa]">
+            className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#5c7cfa] active:opacity-85">
             <Text className="text-base font-semibold text-white">Editar</Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
             onPress={confirmarExclusao}
-            className="h-12 flex-1 items-center justify-center rounded-2xl border border-indigo-100 bg-white">
-            <Text className="text-base font-semibold text-slate-900">Excluir</Text>
+            className="h-12 flex-1 items-center justify-center rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] active:opacity-75">
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">Excluir</Text>
           </Pressable>
         </View>
       </ScrollView>
