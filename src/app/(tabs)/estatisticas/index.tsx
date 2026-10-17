@@ -33,12 +33,12 @@ function CardMetrica({
   icone: keyof typeof Feather.glyphMap;
 }) {
   return (
-    <View className="flex-1 rounded-2xl border border-indigo-100 bg-white p-3.5">
+    <View className="flex-1 rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-3.5 shadow-sm shadow-slate-100 dark:shadow-none">
       <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-xs font-medium text-slate-500">{rotulo}</Text>
+        <Text className="text-xs font-medium text-slate-400 dark:text-[#8E92B8]">{rotulo}</Text>
         <Feather name={icone} size={15} color="#818cf8" />
       </View>
-      <Text className="text-xl font-bold text-slate-900" numberOfLines={1}>
+      <Text className="text-xl font-bold text-slate-900 dark:text-white" numberOfLines={1}>
         {valor}
       </Text>
     </View>
@@ -79,7 +79,7 @@ function GraficoBarrasVolume({
         {/* Coluna do Eixo Y - afastada da lateral esquerda do Card, com números normais em kg */}
         <View className="w-16 justify-between items-end pr-3 py-1">
           {marcasEixoY.map((marca, idx) => (
-            <Text key={idx} className="text-[11px] font-medium text-slate-400">
+            <Text key={idx} className="text-[11px] font-medium text-slate-400 dark:text-[#8E92B8]">
               {formatarNumero(marca)}
             </Text>
           ))}
@@ -92,7 +92,7 @@ function GraficoBarrasVolume({
             {marcasEixoY.map((_, idx) => (
               <View
                 key={idx}
-                className="w-full border-b border-dashed border-slate-300"
+                className="w-full border-b border-dashed border-slate-300 dark:border-[#282B54]"
                 style={{ opacity: 0.6 }}
               />
             ))}
@@ -134,7 +134,7 @@ function GraficoBarrasVolume({
                     }}
                     className={`rounded-t-md ${
                       ponto.volume === 0
-                        ? 'bg-slate-200'
+                        ? 'bg-slate-200 dark:bg-[#202345]'
                         : estaSelecionada
                         ? 'bg-[#4338ca]'
                         : 'bg-[#5c7cfa]'
@@ -161,8 +161,8 @@ function GraficoBarrasVolume({
               <Text
                 className={`text-xs ${
                   estaSelecionada
-                    ? 'font-bold text-[#4338ca]'
-                    : 'font-semibold text-slate-500'
+                    ? 'font-bold text-[#5c7cfa]'
+                    : 'font-semibold text-slate-400 dark:text-[#8E92B8]'
                 }`}
               >
                 {ponto.rotulo}
@@ -264,19 +264,19 @@ export default function Estatisticas() {
   const semTreinos = !resumo || resumo.totalTreinos === 0;
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <ScrollView
         className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 40, paddingTop: 12 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-3xl font-bold text-slate-900">Estatísticas</Text>
+          <Text className="text-3xl font-bold text-slate-900 dark:text-white">Estatísticas</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ir para gráficos de evolução"
             onPress={() => router.push('/estatisticas/evolucao')}
-            className="flex-row items-center rounded-xl bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
+            className="flex-row items-center rounded-xl bg-indigo-50 dark:bg-[#23264D] px-3 py-1.5 active:bg-indigo-100"
           >
             <Text className="mr-1 text-xs font-semibold text-[#5c7cfa]">Evolução</Text>
             <Feather name="trending-up" size={14} color="#5c7cfa" />
@@ -333,11 +333,11 @@ export default function Estatisticas() {
             </View>
 
             {/* Card com Gráfico: Volume de treino */}
-            <View className="mt-5 rounded-3xl border border-indigo-100 bg-white p-4">
+            <View className="mt-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
                 <View>
-                  <Text className="text-base font-bold text-slate-900">Volume de treino</Text>
-                  <Text className="text-xs text-slate-500">
+                  <Text className="text-base font-bold text-slate-900 dark:text-white">Volume de treino</Text>
+                  <Text className="text-xs text-slate-400 dark:text-[#8E92B8]">
                     {periodoVolume === 'dias'
                       ? 'Distribuição diária (kg)'
                       : periodoVolume === 'semanas'
@@ -395,14 +395,14 @@ export default function Estatisticas() {
                         : 'mensal';
 
                     return (
-                      <View className="mt-3.5 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5">
+                      <View className="mt-3.5 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-indigo-50/60 dark:bg-[#14152D] p-3.5">
                         {/* Cabeçalho do Card de Insight */}
-                        <View className="flex-row items-center justify-between pb-2 border-b border-indigo-100/60">
+                        <View className="flex-row items-center justify-between pb-2 border-b border-indigo-100/60 dark:border-[#282B54]/60">
                           <View className="flex-row items-center gap-2">
                             <View className="h-6 w-6 items-center justify-center rounded-lg bg-[#5c7cfa]/20">
-                              <Feather name="bar-chart" size={13} color="#4338ca" />
+                              <Feather name="bar-chart" size={13} color="#5c7cfa" />
                             </View>
-                            <Text className="text-xs font-bold text-slate-800">
+                            <Text className="text-xs font-bold text-slate-800 dark:text-white">
                               {ponto.rotulo} • {ponto.data}
                             </Text>
                           </View>
@@ -428,10 +428,10 @@ export default function Estatisticas() {
                           ) : (
                             <>
                               <View className="flex-row items-baseline justify-between">
-                                <Text className="text-sm font-semibold text-slate-800" numberOfLines={1}>
+                                <Text className="text-sm font-semibold text-slate-800 dark:text-white" numberOfLines={1}>
                                   {ponto.nome}
                                 </Text>
-                                <Text className="text-base font-bold text-[#4338ca]">
+                                <Text className="text-base font-bold text-[#5c7cfa]">
                                   {formatarVolume(ponto.volume)}
                                 </Text>
                               </View>
@@ -442,32 +442,32 @@ export default function Estatisticas() {
                                   {ponto.grupoMuscular ? (
                                     <View className="flex-row items-center gap-1">
                                       <Feather name="tag" size={11} color="#64748b" />
-                                      <Text className="text-xs text-slate-500">{ponto.grupoMuscular}</Text>
+                                      <Text className="text-xs text-slate-400 dark:text-[#8E92B8]">{ponto.grupoMuscular}</Text>
                                     </View>
                                   ) : null}
                                   {ponto.duracao > 0 ? (
                                     <View className="flex-row items-center gap-1">
                                       <Feather name="clock" size={11} color="#64748b" />
-                                      <Text className="text-xs text-slate-500">{ponto.duracao} min</Text>
+                                      <Text className="text-xs text-slate-400 dark:text-[#8E92B8]">{ponto.duracao} min</Text>
                                     </View>
                                   ) : null}
                                   {ponto.totalSeries > 0 ? (
                                     <View className="flex-row items-center gap-1">
                                       <Feather name="layers" size={11} color="#64748b" />
-                                      <Text className="text-xs text-slate-500">{ponto.totalSeries} séries</Text>
+                                      <Text className="text-xs text-slate-400 dark:text-[#8E92B8]">{ponto.totalSeries} séries</Text>
                                     </View>
                                   ) : null}
                                 </View>
                               )}
 
                               {/* Insight Comparativo com a média do período */}
-                              <View className="mt-2.5 flex-row items-center gap-1.5 rounded-xl bg-white/80 px-2.5 py-1.5 border border-indigo-100/50">
+                              <View className="mt-2.5 flex-row items-center gap-1.5 rounded-xl bg-white/80 dark:bg-[#1C1E3A] px-2.5 py-1.5 border border-indigo-100/50 dark:border-[#282B54]">
                                 <Feather
                                   name={ehAcima ? 'trending-up' : ehAbaixo ? 'trending-down' : 'minus'}
                                   size={13}
                                   color={ehAcima ? '#16a34a' : ehAbaixo ? '#d97706' : '#64748b'}
                                 />
-                                <Text className="text-[11px] font-medium text-slate-600 flex-1">
+                                <Text className="text-[11px] font-medium text-slate-600 dark:text-slate-300 flex-1">
                                   {ehAcima
                                     ? `${diffPercent}% acima da sua média ${termoPeriodo} (${formatarNumero(mediaVolume)} kg)`
                                     : ehAbaixo
@@ -490,11 +490,11 @@ export default function Estatisticas() {
             </View>
 
             {/* Grupos musculares */}
-            <View className="mt-5 rounded-3xl border border-indigo-100 bg-white p-4">
+            <View className="mt-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
-                <Text className="text-base font-bold text-slate-900">Grupos musculares</Text>
+                <Text className="text-base font-bold text-slate-900 dark:text-white">Grupos musculares</Text>
                 {resumo?.grupoMaisTreinado && (
-                  <View className="rounded-full bg-indigo-50 px-2.5 py-0.5">
+                  <View className="rounded-full bg-indigo-50 dark:bg-[#23264D] px-2.5 py-0.5">
                     <Text className="text-[11px] font-semibold text-[#5c7cfa]">
                       Mais frequente: {resumo.grupoMaisTreinado}
                     </Text>
@@ -513,12 +513,12 @@ export default function Estatisticas() {
                     return (
                       <View key={item.grupo}>
                         <View className="mb-1 flex-row items-center justify-between">
-                          <Text className="text-sm font-semibold text-slate-800">{item.grupo}</Text>
-                          <Text className="text-sm font-bold text-slate-600">
+                          <Text className="text-sm font-semibold text-slate-800 dark:text-white">{item.grupo}</Text>
+                          <Text className="text-sm font-bold text-slate-500 dark:text-[#8E92B8]">
                             {item.porcentagem}%
                           </Text>
                         </View>
-                        <View className="h-2.5 w-full overflow-hidden rounded-full bg-indigo-50">
+                        <View className="h-2.5 w-full overflow-hidden rounded-full bg-indigo-50 dark:bg-[#202345]">
                           <Animated.View
                             className="h-full rounded-full bg-[#5c7cfa]"
                             style={{ width: larguraAnimada }}

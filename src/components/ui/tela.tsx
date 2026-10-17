@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-
-import { cores, espacamento } from '@/constants/tema';
 
 type TelaProps = {
   children: ReactNode;
@@ -12,16 +10,8 @@ type TelaProps = {
 
 export function Tela({ children, bordas = ['top', 'left', 'right'], style }: TelaProps) {
   return (
-    <SafeAreaView edges={bordas} style={[estilos.tela, style]}>
+    <SafeAreaView edges={bordas} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B] px-4" style={style}>
       {children}
     </SafeAreaView>
   );
 }
-
-const estilos = StyleSheet.create({
-  tela: {
-    flex: 1,
-    backgroundColor: cores.fundo,
-    paddingHorizontal: espacamento.md,
-  },
-});

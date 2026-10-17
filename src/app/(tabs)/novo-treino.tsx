@@ -116,15 +116,15 @@ export default function NovoTreino() {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: '#ffffff' }} 
+      className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]" 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView 
-        className="flex-1 bg-white" 
+        className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]" 
         contentContainerStyle={{ padding: 24, paddingBottom: 60 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-3xl font-bold text-slate-900 mb-8 mt-4">Novo treino</Text>
+        <Text className="text-3xl font-bold text-slate-900 dark:text-white mb-8 mt-4">Novo treino</Text>
 
         <View className="flex-row gap-4">
           <View className="flex-1">
@@ -207,22 +207,22 @@ export default function NovoTreino() {
         />
 
         <View className="mt-4 mb-8">
-          <Text className="text-slate-900 font-bold text-lg mb-3">Exercícios</Text>
+          <Text className="text-slate-900 dark:text-white font-bold text-lg mb-3">Exercícios</Text>
 
           {draftExercises.length > 0 && (
             <View className="mb-4 gap-2.5">
               {draftExercises.map((ex) => (
                 <View
                   key={ex.id}
-                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex-row items-center justify-between"
+                  className="p-4 rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] flex-row items-center justify-between"
                 >
                   <View className="flex-row items-center flex-1 pr-3">
-                    <View className="w-10 h-10 rounded-xl bg-indigo-50 items-center justify-center mr-3">
+                    <View className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-[#23264D] items-center justify-center mr-3">
                       <MaterialCommunityIcons name="dumbbell" size={20} color="#5c7cfa" />
                     </View>
                     <View className="flex-1">
-                      <Text className="text-base font-bold text-slate-800">{ex.nome}</Text>
-                      <Text className="text-xs text-slate-500 mt-0.5">
+                      <Text className="text-base font-bold text-slate-800 dark:text-white">{ex.nome}</Text>
+                      <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {ex.series.length} série(s) • {ex.grupo}
                         {ex.descanso ? ` • ${ex.descanso}s descanso` : ''}
                       </Text>

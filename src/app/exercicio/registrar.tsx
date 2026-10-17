@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
+import { useThemeStore } from '@/stores/useThemeStore';
 
 const serieSchema = z.object({
   repeticoes: z
@@ -52,6 +53,8 @@ export default function RegistrarExercicio() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string; nome: string; grupo: string }>();
   const addExercise = useWorkoutStore((state) => state.addExercise);
+  const tema = useThemeStore((state) => state.tema);
+  const ehEscuro = tema === 'dark';
 
   const {
     control,
@@ -96,7 +99,7 @@ export default function RegistrarExercicio() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -112,13 +115,13 @@ export default function RegistrarExercicio() {
               onPress={() => router.back()}
               className="p-1 -ml-1 mr-2 flex-row items-center"
             >
-              <Feather name="chevron-left" size={26} color="#1e293b" />
+              <Feather name="chevron-left" size={26} color={ehEscuro ? '#FFFFFF' : '#1e293b'} />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-slate-800">Registrar exercício</Text>
+            <Text className="text-xl font-bold text-slate-800 dark:text-white">Registrar exercício</Text>
           </View>
 
           <View className="flex-row items-center justify-between mt-3 mb-6">
-            <Text className="text-2xl font-bold text-slate-900 flex-1 pr-3">
+            <Text className="text-2xl font-bold text-slate-900 dark:text-white flex-1 pr-3">
               {params.nome || 'Exercício'}
             </Text>
             <View className="bg-[#5c7cfa] px-3.5 py-1 rounded-full">
@@ -131,10 +134,10 @@ export default function RegistrarExercicio() {
           {fields.map((field, index) => (
             <View
               key={field.id}
-              className="mb-4 p-4 rounded-2xl border border-indigo-100 bg-white shadow-sm shadow-indigo-100"
+              className="mb-4 p-4 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-white dark:bg-[#1C1E3A] shadow-sm shadow-indigo-100"
             >
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-base font-bold text-slate-800">
+                <Text className="text-base font-bold text-slate-800 dark:text-white">
                   Série {index + 1}
                 </Text>
                 {fields.length > 1 && (

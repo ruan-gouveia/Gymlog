@@ -1,9 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { Link, useRouter, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Tela } from '@/components/ui/tela';
-import { cores, espacamento, raios, tipografia } from '@/constants/tema';
 
 export type AtalhoNavegacao = {
   rotulo: string;
@@ -33,21 +32,24 @@ export function TelaPlaceholder({
           accessibilityLabel="Voltar"
           hitSlop={12}
           onPress={() => router.back()}
-          style={estilos.voltar}>
-          <Feather name="chevron-left" size={22} color={cores.texto} />
-          <Text style={estilos.textoVoltar}>Voltar</Text>
+          className="flex-row items-center self-start mt-2 mb-2"
+        >
+          <Feather name="chevron-left" size={22} className="text-slate-900 dark:text-white" />
+          <Text className="text-base text-slate-900 dark:text-white ml-1 font-medium">Voltar</Text>
         </Pressable>
       )}
 
-      <Text style={estilos.titulo}>{titulo}</Text>
-      {descricao && <Text style={estilos.descricao}>{descricao}</Text>}
+      <Text className="text-3xl font-extrabold text-slate-900 dark:text-white mt-4">{titulo}</Text>
+      {descricao && (
+        <Text className="text-sm font-medium text-slate-400 dark:text-[#8E92B8] mt-1">{descricao}</Text>
+      )}
 
-      <View style={estilos.atalhos}>
+      <View className="mt-6 gap-3">
         {atalhos.map((atalho) => (
           <Link key={atalho.rotulo} href={atalho.href} asChild>
-            <Pressable style={({ pressed }) => [estilos.atalho, pressed && estilos.atalhoPressionado]}>
-              <Text style={estilos.textoAtalho}>{atalho.rotulo}</Text>
-              <Feather name="chevron-right" size={18} color={cores.textoSecundario} />
+            <Pressable className="flex-row items-center justify-between rounded-2xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] px-4 py-3.5 active:opacity-70 shadow-sm shadow-slate-100 dark:shadow-none">
+              <Text className="text-[15px] font-semibold text-slate-900 dark:text-white">{atalho.rotulo}</Text>
+              <Feather name="chevron-right" size={18} color="#94A3B8" />
             </Pressable>
           </Link>
         ))}
@@ -55,50 +57,3 @@ export function TelaPlaceholder({
     </Tela>
   );
 }
-
-const estilos = StyleSheet.create({
-  voltar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: espacamento.sm,
-  },
-  textoVoltar: {
-    color: cores.texto,
-    fontSize: tipografia.corpo,
-  },
-  titulo: {
-    color: cores.texto,
-    fontSize: tipografia.titulo,
-    fontWeight: '700',
-    marginTop: espacamento.md,
-  },
-  descricao: {
-    color: cores.textoSecundario,
-    fontSize: tipografia.corpo,
-    marginTop: espacamento.xs,
-  },
-  atalhos: {
-    gap: espacamento.sm,
-    marginTop: espacamento.lg,
-  },
-  atalho: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: cores.superficie,
-    borderColor: cores.borda,
-    borderWidth: 1,
-    borderRadius: raios.md,
-    paddingHorizontal: espacamento.md,
-    paddingVertical: espacamento.md,
-  },
-  atalhoPressionado: {
-    backgroundColor: cores.superficieElevada,
-  },
-  textoAtalho: {
-    color: cores.texto,
-    fontSize: tipografia.corpo,
-    fontWeight: '500',
-  },
-});

@@ -12,13 +12,13 @@ export function Button({ title, variant = 'primary', isLoading, ...rest }: Butto
   let borderClass = '';
 
   if (variant === 'outline') {
-    bgClass = 'bg-white';
-    textClass = 'text-slate-800';
-    borderClass = 'border border-slate-300';
+    bgClass = 'bg-white dark:bg-[#1C1E3A]';
+    textClass = 'text-slate-800 dark:text-white';
+    borderClass = 'border border-slate-300 dark:border-[#282B54]';
   } else if (variant === 'dashed') {
-    bgClass = 'bg-[#edf2ff]';
-    textClass = 'text-[#4c6ef5]';
-    borderClass = 'border border-dashed border-[#bac8ff]';
+    bgClass = 'bg-[#edf2ff] dark:bg-[#1C1E3A]';
+    textClass = 'text-[#4c6ef5] dark:text-[#7A93FF]';
+    borderClass = 'border border-dashed border-[#bac8ff] dark:border-[#383D6E]';
   }
 
   return (

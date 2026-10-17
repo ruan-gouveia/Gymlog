@@ -155,7 +155,7 @@ function SeriesDoExercicio({
       {fields.map((campo, i) => (
         <View key={campo.id} className="mb-1">
           <View className="mb-1 flex-row items-center justify-between">
-            <Text className="text-sm font-bold text-slate-800">Série {i + 1}</Text>
+            <Text className="text-sm font-bold text-slate-800 dark:text-white">Série {i + 1}</Text>
             {fields.length > 1 && (
               <TouchableOpacity onPress={() => remove(i)} hitSlop={8}>
                 <Feather name="trash-2" size={18} color="#ef4444" />
@@ -242,10 +242,10 @@ export function TreinoEdicaoForm({
         <Campo control={control} name="grupo_muscular" label="Grupo muscular ou objetivo" />
         <Campo control={control} name="observacoes" label="Observações" multiline />
 
-        <Text className="mb-3 mt-2 text-lg font-bold text-slate-900">Exercícios</Text>
+        <Text className="mb-3 mt-2 text-lg font-bold text-slate-900 dark:text-white">Exercícios</Text>
 
         {fields.map((campo, i) => (
-          <View key={campo.id} className="mb-4 rounded-2xl border border-indigo-100 bg-white p-4">
+          <View key={campo.id} className="mb-4 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-white dark:bg-[#1C1E3A] p-4">
             <View className="flex-row items-start gap-3">
               <View className="flex-1">
                 <Campo control={control} name={`exercicios.${i}.nome`} label="Exercício" />

@@ -24,23 +24,22 @@ export default function Historico() {
     }, [])
   );
 
- return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+  return (
+    <SafeAreaView edges={['top']} className="flex-1 bg-[#FAFAFC] dark:bg-[#11122B]">
       <FlatList
         data={treinos}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 12 }}
         ListHeaderComponent={
           <View className="mb-1 pt-4">
-            <Text className="text-3xl font-bold text-slate-900">Histórico</Text>
+            <Text className="text-3xl font-bold text-slate-900 dark:text-white">Histórico</Text>
 
-           
             <View className="mt-3 flex-row gap-2">
               <Pressable className="rounded-full bg-[#5c7cfa] px-3.5 py-1.5">
                 <Text className="text-xs font-semibold text-white">Todos os grupos musculares</Text>
               </Pressable>
-              <Pressable className="rounded-full border border-indigo-100 bg-white px-3.5 py-1.5">
-                <Text className="text-xs font-semibold text-slate-800">Período</Text>
+              <Pressable className="rounded-full border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] px-3.5 py-1.5">
+                <Text className="text-xs font-semibold text-slate-800 dark:text-slate-200">Período</Text>
               </Pressable>
             </View>
 
@@ -57,7 +56,7 @@ export default function Historico() {
         )}
         ListEmptyComponent={
           erro ? null : (
-            <Text className="mt-10 text-center text-sm text-slate-500">
+            <Text className="mt-10 text-center text-sm text-slate-400 dark:text-[#8E92B8]">
               Nenhum treino registrado ainda. Toque no + para começar.
             </Text>
           )
