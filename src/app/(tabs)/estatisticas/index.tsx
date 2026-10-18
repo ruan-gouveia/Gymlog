@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -196,16 +197,17 @@ export default function Estatisticas() {
     animTranslacaoY.setValue(20);
     animProgresso.setValue(0);
 
+    const usarDriverNativo = Platform.OS !== 'web';
     Animated.parallel([
       Animated.timing(animOpacidade, {
         toValue: 1,
         duration: 450,
-        useNativeDriver: true,
+        useNativeDriver: usarDriverNativo,
       }),
       Animated.timing(animTranslacaoY, {
         toValue: 0,
         duration: 450,
-        useNativeDriver: true,
+        useNativeDriver: usarDriverNativo,
       }),
       Animated.timing(animProgresso, {
         toValue: 1,

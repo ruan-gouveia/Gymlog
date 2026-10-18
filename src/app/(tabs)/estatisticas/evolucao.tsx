@@ -5,6 +5,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -12,6 +13,17 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Circle,
+  Defs,
+  Line,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+  Svg,
+  Text as SvgText,
+} from 'react-native-svg';
 
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import {
@@ -37,6 +49,22 @@ type PontoSelecionado = {
   y: number;
 } | null;
 
+const usarDriverNativo = Platform.OS !== 'web';
+
+function formatarRotuloEixoY(y: string): string {
+  const num = Number(y);
+  if (isNaN(num) || num === 0) return '0';
+  if (num >= 1000000) {
+    const m = num / 1000000;
+    return `${m.toFixed(m >= 10 ? 0 : 1).replace('.0', '')}M`;
+  }
+  if (num >= 1000) {
+    const k = num / 1000;
+    return `${k.toFixed(k >= 10 ? 0 : 1).replace('.0', '')}k`;
+  }
+  return String(Math.round(num));
+}
+
 export default function Evolucao() {
   const router = useRouter();
   const tema = useThemeStore((s) => s.tema);
@@ -61,18 +89,18 @@ export default function Evolucao() {
       Animated.timing(animOpacidade, {
         toValue: 1,
         duration: 450,
-        useNativeDriver: true,
+        useNativeDriver: usarDriverNativo,
       }),
       Animated.timing(animTranslacaoY, {
         toValue: 0,
         duration: 450,
-        useNativeDriver: true,
+        useNativeDriver: usarDriverNativo,
       }),
       Animated.timing(animScaleY, {
         toValue: 1,
         duration: 650,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: usarDriverNativo,
       }),
     ]).start();
   }, [animOpacidade, animTranslacaoY, animScaleY]);
@@ -374,7 +402,6 @@ export default function Evolucao() {
 
                       return (
                         <View
-                          pointerEvents="none"
                           style={{
                             position: 'absolute',
                             left: leftPos,
@@ -382,6 +409,7 @@ export default function Evolucao() {
                             width: LARGURA_TOOLTIP,
                             zIndex: 40,
                             alignItems: 'center',
+                            pointerEvents: 'none',
                           }}
                         >
                           {/* Triângulo / Setinha apontando para CIMA quando surge abaixo do nó */}
@@ -403,76 +431,314 @@ export default function Evolucao() {
                       );
                     })()}
 
-                    <LineChart
-                      data={dadosGrafico}
-                      width={larguraGrafico}
-                      height={190}
-                      bezier
-                      yAxisLabel=""
-                      yAxisSuffix={unidadeSufixoEixoY}
-                      yLabelsOffset={8}
-                      onDataPointClick={(data) => {
-                        const ponto = pontos[data.index];
-                        if (!ponto) return;
-                        setPontoSelecionado((atual) =>
-                          atual?.index === data.index &&
-                          atual?.exercicio === exercicioSelecionado &&
-                          atual?.metrica === metrica &&
-                          atual?.periodo === periodo
-                            ? null
-                            : {
-                                exercicio: exercicioSelecionado,
-                                metrica,
-                                periodo,
-                                index: data.index,
-                                valor: valoresMetrica[data.index] ?? data.value,
-                                rotulo: ponto.rotulo,
-                                data: ponto.data,
-                                x: data.x,
-                                y: data.y,
-                              }
+                    {Platform.OS === 'web' ? (
+                      (() => {
+                        const alturaSvg = 190;
+                        const padTop = 16;
+                        const padRight = 64;
+                        const basePos = alturaSvg * 0.75;
+                        const serie = dadosGrafico.datasets[0]?.data ?? [];
+                        const rotulosX = dadosGrafico.labels ?? [];
+                        const minVal = serie.length > 0 ? Math.min(...serie) : 0;
+                        const maxVal = serie.length > 0 ? Math.max(...serie) : 0;
+                        const scaler = maxVal - minVal || 1;
+                        const qtdLinhasH = minVal === maxVal ? 1 : 4;
+                        const xMax = Math.max(serie.length, 1);
+
+                        const calcX = (idx: number) =>
+                          padRight + (idx * (larguraGrafico - padRight)) / xMax;
+                        const calcY = (val: number) => {
+                          const h = alturaSvg * ((val - minVal) / scaler);
+                          return ((alturaSvg - h) / 4) * 3 + padTop;
+                        };
+
+                        const coords = serie.map((val, idx) => ({
+                          x: calcX(idx),
+                          y: calcY(val),
+                          val,
+                        }));
+
+                        const caminhoLinha =
+                          coords.length === 0
+                            ? 'M0,0'
+                            : [
+                                `M${Math.floor(coords[0].x)},${Math.floor(coords[0].y)}`,
+                                ...coords.slice(0, -1).map((_, i) => {
+                                  const x0 = Math.floor(coords[i].x);
+                                  const y0 = Math.floor(coords[i].y);
+                                  const x1 = Math.floor(coords[i + 1].x);
+                                  const y1 = Math.floor(coords[i + 1].y);
+                                  const xMid = (x0 + x1) / 2;
+                                  const yMid = (y0 + y1) / 2;
+                                  const cpX1 = (xMid + x0) / 2;
+                                  const cpX2 = (xMid + x1) / 2;
+                                  return `Q ${cpX1}, ${y0}, ${xMid}, ${yMid} Q ${cpX2}, ${y1}, ${x1}, ${y1}`;
+                                }),
+                              ].join(' ');
+
+                        const yBaseSombra = (alturaSvg / 4) * 3 + padTop;
+                        const caminhoSombra =
+                          coords.length > 0
+                            ? `${caminhoLinha} L${coords[coords.length - 1].x},${yBaseSombra} L${padRight},${yBaseSombra} Z`
+                            : 'M0,0';
+
+                        const corGrade = ehEscuro ? '#282B54' : '#94a3b8';
+                        const opacidadeGrade = ehEscuro ? 0.6 : 0.35;
+                        const corRotulo = ehEscuro
+                          ? 'rgba(142, 146, 184, 0.8)'
+                          : 'rgba(100, 116, 139, 0.8)';
+                        const corFundo = ehEscuro ? '#1C1E3A' : '#ffffff';
+
+                        return (
+                          <View
+                            style={{
+                              width: larguraGrafico,
+                              height: alturaSvg,
+                              borderRadius: 16,
+                              position: 'relative',
+                            }}
+                          >
+                            <Svg width={larguraGrafico} height={alturaSvg}>
+                              <Defs>
+                                <LinearGradient
+                                  id="gradSombraEvolucaoWeb"
+                                  x1="0"
+                                  y1="0"
+                                  x2="0"
+                                  y2={String(alturaSvg)}
+                                  gradientUnits="userSpaceOnUse"
+                                >
+                                  <Stop
+                                    offset="0"
+                                    stopColor="rgba(92, 124, 250, 1)"
+                                    stopOpacity="0.1"
+                                  />
+                                  <Stop
+                                    offset="1"
+                                    stopColor="rgba(92, 124, 250, 1)"
+                                    stopOpacity="0.1"
+                                  />
+                                </LinearGradient>
+                              </Defs>
+
+                              <Rect
+                                width="100%"
+                                height={alturaSvg}
+                                rx={16}
+                                ry={16}
+                                fill={corFundo}
+                              />
+
+                              {Array.from({ length: qtdLinhasH + 1 }).map((_, i) => {
+                                const y = (basePos / qtdLinhasH) * i + padTop;
+                                return (
+                                  <Line
+                                    key={`h-line-${i}`}
+                                    x1={padRight}
+                                    y1={y}
+                                    x2={larguraGrafico}
+                                    y2={y}
+                                    stroke={corGrade}
+                                    strokeDasharray="4"
+                                    strokeOpacity={opacidadeGrade}
+                                    strokeWidth={1.2}
+                                  />
+                                );
+                              })}
+
+                              {serie.map((_, i) => {
+                                const x = Math.floor(
+                                  ((larguraGrafico - padRight) / Math.max(serie.length, 1)) * i +
+                                    padRight
+                                );
+                                return (
+                                  <Line
+                                    key={`v-line-${i}`}
+                                    x1={x}
+                                    y1={0}
+                                    x2={x}
+                                    y2={basePos + padTop}
+                                    stroke={corGrade}
+                                    strokeDasharray="4"
+                                    strokeOpacity={opacidadeGrade}
+                                    strokeWidth={1.2}
+                                  />
+                                );
+                              })}
+
+                              {Array.from({
+                                length: qtdLinhasH === 1 ? 1 : qtdLinhasH + 1,
+                              }).map((_, i) => {
+                                const valBruto =
+                                  qtdLinhasH === 1
+                                    ? (serie[0] ?? 0)
+                                    : (scaler / qtdLinhasH) * i + minVal;
+                                const yLabel = `${formatarRotuloEixoY(
+                                  valBruto.toFixed(0)
+                                )}${unidadeSufixoEixoY}`;
+                                const x = padRight - 8;
+                                const y = basePos - (basePos / qtdLinhasH) * i + padTop;
+                                return (
+                                  <SvgText
+                                    key={`h-label-${i}`}
+                                    x={x}
+                                    y={y}
+                                    textAnchor="end"
+                                    fontSize={12}
+                                    fill={corRotulo}
+                                  >
+                                    {yLabel}
+                                  </SvgText>
+                                );
+                              })}
+
+                              {rotulosX.map((rotulo, i) => {
+                                const x =
+                                  ((larguraGrafico - padRight) / Math.max(rotulosX.length, 1)) * i +
+                                  padRight;
+                                const y = basePos + padTop + 24;
+                                return (
+                                  <SvgText
+                                    key={`v-label-${i}`}
+                                    x={x}
+                                    y={y}
+                                    textAnchor="middle"
+                                    fontSize={12}
+                                    fill={corRotulo}
+                                  >
+                                    {rotulo}
+                                  </SvgText>
+                                );
+                              })}
+
+                              <Path
+                                d={caminhoSombra}
+                                fill="url(#gradSombraEvolucaoWeb)"
+                                strokeWidth={0}
+                              />
+                              <Path
+                                d={caminhoLinha}
+                                fill="none"
+                                stroke="rgba(92, 124, 250, 0.2)"
+                                strokeWidth={3}
+                              />
+
+                              {coords.map((pt, i) => (
+                                <Circle
+                                  key={`dot-${i}`}
+                                  cx={pt.x}
+                                  cy={pt.y}
+                                  r={5}
+                                  strokeWidth={2}
+                                  stroke="#5c7cfa"
+                                  fill={corFundo}
+                                />
+                              ))}
+                            </Svg>
+
+                            {coords.map((pt, idx) => (
+                              <Pressable
+                                key={`dot-btn-${idx}`}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Selecionar ponto ${
+                                  pontos[idx]?.rotulo ?? idx + 1
+                                }`}
+                                onPress={() => {
+                                  const indiceReal = Math.min(idx, pontos.length - 1);
+                                  const ponto = pontos[indiceReal];
+                                  if (!ponto) return;
+                                  setPontoSelecionado((atual) =>
+                                    atual?.index === indiceReal &&
+                                    atual?.exercicio === exercicioSelecionado &&
+                                    atual?.metrica === metrica &&
+                                    atual?.periodo === periodo
+                                      ? null
+                                      : {
+                                          exercicio: exercicioSelecionado,
+                                          metrica,
+                                          periodo,
+                                          index: indiceReal,
+                                          valor: valoresMetrica[indiceReal] ?? pt.val,
+                                          rotulo: ponto.rotulo,
+                                          data: ponto.data,
+                                          x: pt.x,
+                                          y: pt.y,
+                                        }
+                                  );
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  left: pt.x - 14,
+                                  top: pt.y - 14,
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                }}
+                              />
+                            ))}
+                          </View>
                         );
-                      }}
-                      chartConfig={{
-                        backgroundColor: ehEscuro ? '#1C1E3A' : '#ffffff',
-                        backgroundGradientFrom: ehEscuro ? '#1C1E3A' : '#ffffff',
-                        backgroundGradientTo: ehEscuro ? '#1C1E3A' : '#ffffff',
-                        decimalPlaces: 0,
-                        formatYLabel: (y: string) => {
-                          const num = Number(y);
-                          if (isNaN(num) || num === 0) return '0';
-                          if (num >= 1000000) {
-                            const m = num / 1000000;
-                            return `${m.toFixed(m >= 10 ? 0 : 1).replace('.0', '')}M`;
-                          }
-                          if (num >= 1000) {
-                            const k = num / 1000;
-                            return `${k.toFixed(k >= 10 ? 0 : 1).replace('.0', '')}k`;
-                          }
-                          return String(Math.round(num));
-                        },
-                        color: (opacity = 1) => `rgba(92, 124, 250, ${opacity})`,
-                        labelColor: (opacity = 1) =>
-                          ehEscuro
-                            ? `rgba(142, 146, 184, ${opacity})`
-                            : `rgba(100, 116, 139, ${opacity})`,
-                        propsForDots: {
-                          r: '5',
-                          strokeWidth: '2',
-                          stroke: '#5c7cfa',
-                          fill: ehEscuro ? '#1C1E3A' : '#ffffff',
-                        },
-                        propsForBackgroundLines: {
-                          strokeDasharray: '4',
-                          stroke: ehEscuro ? '#282B54' : '#94a3b8',
-                          strokeOpacity: ehEscuro ? 0.6 : 0.35,
-                          strokeWidth: 1.2,
-                        },
-                      }}
-                      style={{
-                        borderRadius: 16,
-                      }}
-                    />
+                      })()
+                    ) : (
+                      <LineChart
+                        data={dadosGrafico}
+                        width={larguraGrafico}
+                        height={190}
+                        bezier
+                        yAxisLabel=""
+                        yAxisSuffix={unidadeSufixoEixoY}
+                        yLabelsOffset={8}
+                        onDataPointClick={(data) => {
+                          const ponto = pontos[data.index];
+                          if (!ponto) return;
+                          setPontoSelecionado((atual) =>
+                            atual?.index === data.index &&
+                            atual?.exercicio === exercicioSelecionado &&
+                            atual?.metrica === metrica &&
+                            atual?.periodo === periodo
+                              ? null
+                              : {
+                                  exercicio: exercicioSelecionado,
+                                  metrica,
+                                  periodo,
+                                  index: data.index,
+                                  valor: valoresMetrica[data.index] ?? data.value,
+                                  rotulo: ponto.rotulo,
+                                  data: ponto.data,
+                                  x: data.x,
+                                  y: data.y,
+                                }
+                          );
+                        }}
+                        chartConfig={{
+                          backgroundColor: ehEscuro ? '#1C1E3A' : '#ffffff',
+                          backgroundGradientFrom: ehEscuro ? '#1C1E3A' : '#ffffff',
+                          backgroundGradientTo: ehEscuro ? '#1C1E3A' : '#ffffff',
+                          decimalPlaces: 0,
+                          formatYLabel: formatarRotuloEixoY,
+                          color: (opacity = 1) => `rgba(92, 124, 250, ${opacity})`,
+                          labelColor: (opacity = 1) =>
+                            ehEscuro
+                              ? `rgba(142, 146, 184, ${opacity})`
+                              : `rgba(100, 116, 139, ${opacity})`,
+                          propsForDots: {
+                            r: '5',
+                            strokeWidth: '2',
+                            stroke: '#5c7cfa',
+                            fill: ehEscuro ? '#1C1E3A' : '#ffffff',
+                          },
+                          propsForBackgroundLines: {
+                            strokeDasharray: '4',
+                            stroke: ehEscuro ? '#282B54' : '#94a3b8',
+                            strokeOpacity: ehEscuro ? 0.6 : 0.35,
+                            strokeWidth: 1.2,
+                          },
+                        }}
+                        style={{
+                          borderRadius: 16,
+                        }}
+                      />
+                    )}
                   </Animated.View>
 
                   {/* Card de Insights Analíticos com Cálculo de Delta */}

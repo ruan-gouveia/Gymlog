@@ -180,7 +180,7 @@ export function ModalLembretes({
             />
           </View>
 
-          <View style={{ opacity: ativo ? 1 : 0.45 }} pointerEvents={ativo ? 'auto' : 'none'}>
+          <View style={{ opacity: ativo ? 1 : 0.45, pointerEvents: ativo ? 'auto' : 'none' }}>
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-[14px] font-bold text-slate-800 dark:text-white">
                 Antecedência da Notificação
@@ -218,10 +218,10 @@ export function ModalLembretes({
                   />
                 </View>
                 <View
-                  pointerEvents="none"
                   style={{
                     left: `${Math.max(0, Math.min(100, porcentagemSlider))}%`,
                     marginLeft: -11,
+                    pointerEvents: 'none',
                   }}
                   className="absolute h-5 w-5 rounded-full bg-white border-[3px] border-[#5C7CFA] shadow"
                 />

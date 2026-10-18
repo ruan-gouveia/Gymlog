@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { NavigationBar } from 'expo-navigation-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
@@ -16,6 +16,23 @@ import {
   iniciarMonitoramentoBarraNavegacao,
 } from '@/utils/sistemaNavegacao';
 import '../global.css';
+
+if (Platform.OS === 'web') {
+  const warnOriginal = console.warn;
+  console.warn = (...args: unknown[]) => {
+    const primeiraMsg = typeof args[0] === 'string' ? args[0] : '';
+    if (
+      primeiraMsg.includes('"shadow*" style props are deprecated') ||
+      primeiraMsg.includes('props.pointerEvents is deprecated') ||
+      primeiraMsg.includes('Cannot record touch end without a touch start') ||
+      primeiraMsg.includes('TouchableMixin is deprecated') ||
+      primeiraMsg.includes('`useNativeDriver` is not supported')
+    ) {
+      return;
+    }
+    warnOriginal(...args);
+  };
+}
 
 SplashScreen.preventAutoHideAsync();
 

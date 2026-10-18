@@ -414,22 +414,32 @@ export default function AgendarTreino() {
               <Controller
                 control={control}
                 name="data"
-                render={({ field: { onChange, value } }) => (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => abrirSeletorData(value, onChange)}
-                  >
-                    <View pointerEvents="none">
-                      <Input
-                        label="Data"
-                        placeholder="DD/MM/AAAA"
-                        value={value}
-                        editable={false}
-                        error={errors.data?.message}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                )}
+                render={({ field: { onChange, value } }) =>
+                  Platform.OS === 'web' ? (
+                    <Input
+                      label="Data"
+                      placeholder="DD/MM/AAAA"
+                      value={value}
+                      onChangeText={onChange}
+                      error={errors.data?.message}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => abrirSeletorData(value, onChange)}
+                    >
+                      <View style={{ pointerEvents: 'none' }}>
+                        <Input
+                          label="Data"
+                          placeholder="DD/MM/AAAA"
+                          value={value}
+                          editable={false}
+                          error={errors.data?.message}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }
               />
             </View>
 
@@ -437,22 +447,32 @@ export default function AgendarTreino() {
               <Controller
                 control={control}
                 name="horario"
-                render={({ field: { onChange, value } }) => (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => abrirSeletorHorario(value, getValues('data'), onChange)}
-                  >
-                    <View pointerEvents="none">
-                      <Input
-                        label="Horário"
-                        placeholder={formatarHoraAtual()}
-                        value={value}
-                        editable={false}
-                        error={errors.horario?.message}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                )}
+                render={({ field: { onChange, value } }) =>
+                  Platform.OS === 'web' ? (
+                    <Input
+                      label="Horário"
+                      placeholder={formatarHoraAtual()}
+                      value={value}
+                      onChangeText={onChange}
+                      error={errors.horario?.message}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => abrirSeletorHorario(value, getValues('data'), onChange)}
+                    >
+                      <View style={{ pointerEvents: 'none' }}>
+                        <Input
+                          label="Horário"
+                          placeholder={formatarHoraAtual()}
+                          value={value}
+                          editable={false}
+                          error={errors.horario?.message}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }
               />
             </View>
           </View>
