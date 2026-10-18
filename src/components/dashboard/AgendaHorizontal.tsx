@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 import type { DiaAgendaItem } from '@/database/inicioConsultas';
 
@@ -35,11 +35,7 @@ export function AgendaHorizontal({
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
-      >
+      <View className="flex-row items-center justify-between">
         {dias.map((dia) => {
           const selecionado = dia.data === dataSelecionada;
 
@@ -48,7 +44,7 @@ export function AgendaHorizontal({
               key={dia.data}
               onPress={() => onSelecionarDia(dia.data)}
               activeOpacity={0.7}
-              className={`w-[52px] h-[78px] rounded-[20px] items-center justify-center py-2 ${
+              className={`flex-1 max-w-[46px] h-[74px] rounded-[18px] items-center justify-center py-2 ${
                 selecionado
                   ? 'bg-[#4F67ED]'
                   : 'bg-white dark:bg-[#1C1E3A] border border-slate-200 dark:border-[#23264D]'
@@ -62,7 +58,7 @@ export function AgendaHorizontal({
                 {dia.diaSemana}
               </Text>
               <Text
-                className={`text-[20px] font-black mt-0.5 ${
+                className={`text-[19px] font-black mt-0.5 ${
                   selecionado ? 'text-white' : 'text-slate-900 dark:text-white'
                 }`}
               >
@@ -81,7 +77,7 @@ export function AgendaHorizontal({
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }

@@ -146,10 +146,6 @@ export function agendarTreino(
   );
 }
 
-/**
- * Agenda o treino na data informada e nas semanas seguintes (mesmo dia da semana
- * e horário), totalizando `ocorrencias` treinos. Tudo ou nada: uma única transação.
- */
 export function agendarTreinoRecorrente(
   treino: NovoTreino,
   exercicios: ExercicioParaSalvar[],

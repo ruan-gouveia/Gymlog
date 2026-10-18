@@ -55,6 +55,7 @@ export default function InicioDashboard() {
         semanasSeguidas: 2,
         volumeSemana: 0,
         proximoTreino: null,
+        proximoTreinoData: null,
       };
     }
   });
@@ -230,6 +231,7 @@ export default function InicioDashboard() {
         <CardsResumoInicio
           volumeSemana={resumoSemana.volumeSemana}
           proximoTreino={resumoSemana.proximoTreino}
+          proximoTreinoData={resumoSemana.proximoTreinoData}
         />
 
         {ultimosTreinos.length > 0 && (
