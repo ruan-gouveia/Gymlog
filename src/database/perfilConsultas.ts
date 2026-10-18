@@ -352,6 +352,24 @@ export async function exportarBancoParaJson(): Promise<{
   const dataSlug = new Date().toISOString().slice(0, 10);
   const nomeArquivo = `gymlog-backup-${dataSlug}.json`;
 
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const blob = new Blob([conteudoJson], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', nomeArquivo);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return {
+      compartilhado: true,
+      uri: nomeArquivo,
+      totalTreinos: dados.treinos.length,
+    };
+  }
+
   const arquivo = new File(Paths.cache, nomeArquivo);
   if (arquivo.exists) {
     arquivo.delete();

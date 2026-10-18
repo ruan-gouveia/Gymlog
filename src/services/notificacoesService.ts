@@ -47,6 +47,7 @@ let carregamentoTentado = false;
  * `TopicSubscriptionModule` (push notifications/FCM removido do Expo Go Android no SDK 53+).
  */
 function obterModulosNotificacoesLocais(): ModulosNotificacoesLocais | null {
+  if (Platform.OS === 'web') return null;
   if (modulosCache) return modulosCache;
   if (carregamentoTentado) return null;
   carregamentoTentado = true;

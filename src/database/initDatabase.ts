@@ -1,4 +1,5 @@
-import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
+import { db as dbPadrao } from './conexao';
 
 export const NOME_BANCO = 'gymlog.db';
 
@@ -32,7 +33,7 @@ export const SCRIPT_CRIACAO_TABELAS = `
   CREATE TABLE IF NOT EXISTS configuracoes_usuario (
     id INTEGER PRIMARY KEY DEFAULT 1,
     meta_semanal INTEGER NOT NULL DEFAULT 3,
-    nome_usuario TEXT NOT NULL DEFAULT 'Matheus Silva',
+    nome_usuario TEXT NOT NULL DEFAULT 'Usuário',
     lembretes_ativo INTEGER NOT NULL DEFAULT 1,
     horario_lembretes TEXT DEFAULT '18:00',
     dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex',
@@ -88,7 +89,7 @@ export function migrarBanco(db: SQLiteDatabase): void {
       CREATE TABLE IF NOT EXISTS configuracoes_usuario (
         id INTEGER PRIMARY KEY DEFAULT 1,
         meta_semanal INTEGER NOT NULL DEFAULT 3,
-        nome_usuario TEXT NOT NULL DEFAULT 'Matheus Silva',
+        nome_usuario TEXT NOT NULL DEFAULT 'Usuário',
         lembretes_ativo INTEGER NOT NULL DEFAULT 1,
         horario_lembretes TEXT DEFAULT '18:00',
         dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex',
@@ -116,7 +117,7 @@ export function migrarBanco(db: SQLiteDatabase): void {
 
     db.runSync(`
       INSERT OR IGNORE INTO configuracoes_usuario (id, meta_semanal, nome_usuario, lembretes_ativo, horario_lembretes, dias_lembretes, antecedencia_lembrete)
-      VALUES (1, 3, 'Matheus Silva', 1, '18:00', 'Seg, Qua e Sex', 30);
+      VALUES (1, 3, 'Usuário', 1, '18:00', 'Seg, Qua e Sex', 30);
     `);
 
     db.runSync('CREATE INDEX IF NOT EXISTS idx_treinos_data_status ON treinos(data, status);');
@@ -130,7 +131,7 @@ export function migrarBanco(db: SQLiteDatabase): void {
 }
 
 export function initDatabase(dbInstancia?: SQLiteDatabase): void {
-  const db = dbInstancia ?? openDatabaseSync(NOME_BANCO);
+  const db = dbInstancia ?? dbPadrao;
 
   try {
     db.execSync('PRAGMA foreign_keys = ON;');
