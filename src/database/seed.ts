@@ -24,8 +24,18 @@ function formatarData(data: Date): string {
   return `${dia}/${mes}/${ano}`;
 }
 
-export function popularBancoComDadosDeTeste(): void {
+export function popularBancoComDadosDeTeste(forcarReset = false): void {
   try {
+    if (!forcarReset) {
+      const existentes = db.getAllSync<{ total: number }>(
+        'SELECT COUNT(*) AS total FROM treinos;'
+      );
+      if ((existentes[0]?.total ?? 0) > 0) {
+        console.log('[Seed] Banco já contém treinos persistidos. Mantendo dados locais.');
+        return;
+      }
+    }
+
     console.log('[Seed] Iniciando população do banco de dados com dados de teste variados...');
 
     db.withTransactionSync(() => {

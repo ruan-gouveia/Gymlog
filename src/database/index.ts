@@ -7,3 +7,4 @@ export * from './treinoRepository';
 export * from './configuracoesRepository';
 export * from './treinoConsultas';
 export * from './inicioConsultas';
+export * from './perfilConsultas';
