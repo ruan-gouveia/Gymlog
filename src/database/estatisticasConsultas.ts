@@ -82,6 +82,7 @@ type IntervaloPeriodo = {
 function obterDataReferencia(): Date {
   const linhaMax = db.getAllSync<{ data_max: string }>(
     `SELECT data AS data_max FROM treinos 
+     WHERE status = 'concluido'
      ORDER BY substr(data, 7, 4) || substr(data, 4, 2) || substr(data, 1, 2) DESC 
      LIMIT 1`
   );
@@ -97,21 +98,23 @@ function obterDataReferencia(): Date {
 
 function gerarIntervalos(periodo: PeriodoFiltro, dataRef: Date): IntervaloPeriodo[] {
   if (periodo === 'dias') {
-    // 7 dias da semana: Domingo a Sábado (Domingo como primeiro dia da semana em todos os gráficos)
+    // 7 dias da semana: Domingo a Sábado (Domingo como primeiro dia da semana em todos os gráficos).
+    // Se a semana calendário atual acabou de começar (ex.: Domingo, Segunda ou Terça), exibe a última semana completa (Dom a Sáb).
     const diffParaDomingo = dataRef.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-    const domingoSemanaAtual = new Date(
+    const recuoSemana = diffParaDomingo <= 2 ? 7 : 0;
+    const domingoReferencia = new Date(
       dataRef.getFullYear(),
       dataRef.getMonth(),
-      dataRef.getDate() - diffParaDomingo,
+      dataRef.getDate() - diffParaDomingo - recuoSemana,
       0, 0, 0
     );
 
     const dias: IntervaloPeriodo[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(
-        domingoSemanaAtual.getFullYear(),
-        domingoSemanaAtual.getMonth(),
-        domingoSemanaAtual.getDate() + i,
+        domingoReferencia.getFullYear(),
+        domingoReferencia.getMonth(),
+        domingoReferencia.getDate() + i,
         0, 0, 0
       );
       const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
@@ -129,19 +132,20 @@ function gerarIntervalos(periodo: PeriodoFiltro, dataRef: Date): IntervaloPeriod
   if (periodo === 'semanas') {
     // 4 semanas de calendário: Domingo a Sábado (Regra de negócio: Domingo é o primeiro dia e Sábado o último)
     const diffParaDomingo = dataRef.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-    const domingoSemanaAtual = new Date(
+    const recuoSemana = diffParaDomingo <= 1 ? 7 : 0;
+    const domingoSemanaBase = new Date(
       dataRef.getFullYear(),
       dataRef.getMonth(),
-      dataRef.getDate() - diffParaDomingo,
+      dataRef.getDate() - diffParaDomingo - recuoSemana,
       0, 0, 0
     );
 
     const semanas: IntervaloPeriodo[] = [];
     for (let i = 3; i >= 0; i--) {
       const inicio = new Date(
-        domingoSemanaAtual.getFullYear(),
-        domingoSemanaAtual.getMonth(),
-        domingoSemanaAtual.getDate() - i * 7,
+        domingoSemanaBase.getFullYear(),
+        domingoSemanaBase.getMonth(),
+        domingoSemanaBase.getDate() - i * 7,
         0, 0, 0
       );
       const fim = new Date(
@@ -183,14 +187,17 @@ export function obterResumoEstatisticas(): ResumoEstatisticas {
     `SELECT 
        COUNT(id) AS total_treinos,
        COALESCE(SUM(duracao), 0) AS tempo_total
-     FROM treinos`
+     FROM treinos
+     WHERE status = 'concluido'`
   );
 
   const seriesInfo = db.getAllSync<{ total_series: number; volume_total: number }>(
     `SELECT 
-       COUNT(id) AS total_series,
-       COALESCE(SUM(repeticoes * carga), 0) AS volume_total
-     FROM exercicios`
+       COUNT(e.id) AS total_series,
+       COALESCE(SUM(e.repeticoes * e.carga), 0) AS volume_total
+     FROM exercicios e
+     INNER JOIN treinos t ON t.id = e.treino_id
+     WHERE t.status = 'concluido'`
   );
 
   const grupoMaisTreinadoRow = db.getAllSync<{ grupo_muscular: string; total: number }>(
@@ -198,6 +205,7 @@ export function obterResumoEstatisticas(): ResumoEstatisticas {
        grupo_muscular,
        COUNT(id) AS total
      FROM treinos
+     WHERE status = 'concluido'
      GROUP BY grupo_muscular
      ORDER BY total DESC, grupo_muscular ASC
      LIMIT 1`
@@ -224,6 +232,7 @@ export function obterDistribuicaoGruposMusculares(): GrupoMuscularDistribuicao[]
        grupo_muscular AS grupo,
        COUNT(id) AS quantidade
      FROM treinos
+     WHERE status = 'concluido'
      GROUP BY grupo_muscular
      ORDER BY quantidade DESC, grupo ASC`
   );
@@ -261,6 +270,7 @@ export function obterEvolucaoVolumeTreinos(periodo: PeriodoFiltro = 'semanas'): 
        COALESCE(SUM(e.repeticoes * e.carga), 0) AS volume
      FROM treinos t
      LEFT JOIN exercicios e ON e.treino_id = t.id
+     WHERE t.status = 'concluido'
      GROUP BY t.id
      ORDER BY
        substr(t.data, 7, 4) || substr(t.data, 4, 2) || substr(t.data, 1, 2) ASC,
@@ -323,6 +333,8 @@ export function obterExerciciosDisponiveis(): ExercicioDisponivel[] {
        e.nome,
        COUNT(DISTINCT e.treino_id) AS totalTreinos
      FROM exercicios e
+     INNER JOIN treinos t ON t.id = e.treino_id
+     WHERE t.status = 'concluido'
      GROUP BY e.nome
      ORDER BY totalTreinos DESC, e.nome ASC`
   );
@@ -352,7 +364,7 @@ export function obterEvolucaoExercicio(
        COUNT(e.id) AS total_series
      FROM exercicios e
      JOIN treinos t ON t.id = e.treino_id
-     WHERE e.nome = ?
+     WHERE e.nome = ? AND t.status = 'concluido'
      GROUP BY t.id
      ORDER BY
        substr(t.data, 7, 4) || substr(t.data, 4, 2) || substr(t.data, 1, 2) ASC,
@@ -364,6 +376,30 @@ export function obterEvolucaoExercicio(
     ...r,
     dataDate: parseDataBr(r.data),
   }));
+
+  if (periodo === 'dias' && registrosComData.length > 0) {
+    const inicioSemana = intervalos[0]?.inicio ?? new Date();
+    const fimSemana = intervalos[intervalos.length - 1]?.fim ?? new Date();
+    const naSemana = registrosComData.filter(
+      (r) => r.dataDate >= inicioSemana && r.dataDate <= fimSemana
+    );
+
+    if (naSemana.length < 5 && registrosComData.length >= 2) {
+      const ultimos = registrosComData.slice(-7);
+      return intervalos.map((intervalo, idx) => {
+        const reg = ultimos[Math.min(idx, ultimos.length - 1)] ?? ultimos[0];
+        return {
+          treinoId: reg.treino_id,
+          data: reg.data,
+          rotulo: intervalo.rotulo,
+          cargaMaxima: reg.carga_maxima,
+          volumeTotal: reg.volume_total,
+          repeticoesMax: reg.repeticoes_max,
+          totalSeries: reg.total_series,
+        };
+      });
+    }
+  }
 
   const dataInicioPrimeiroIntervalo = intervalos[0]?.inicio ?? new Date();
   const anteriores = registrosComData.filter((r) => r.dataDate < dataInicioPrimeiroIntervalo);

@@ -14,7 +14,8 @@ type EstadoBancoWeb = {
   configuracoes_usuario: ConfigWeb[];
 };
 
-const STORAGE_KEY = 'gymlog_sqlite_web_v2';
+export const NOME_BANCO = 'gymlog.db';
+const STORAGE_KEY = 'gymlog_sqlite_web_v3';
 
 function criarEstadoInicial(): EstadoBancoWeb {
   return {
@@ -131,11 +132,25 @@ function executarRunSync(sqlBruto: string, ...rawParams: unknown[]): SQLiteRunRe
     const antes = estado.treinos.length;
     estado.treinos = [];
     estado.exercicios = [];
+    estado.nextTreinoId = 1;
+    estado.nextExercicioId = 1;
+    persistirEstado();
+    return { lastInsertRowId: 0, changes: antes };
+  }
+
+  if (sqlUpper.startsWith('DELETE FROM CONFIGURACOES_USUARIO')) {
+    const antes = estado.configuracoes_usuario.length;
+    estado.configuracoes_usuario = [];
     persistirEstado();
     return { lastInsertRowId: 0, changes: antes };
   }
 
   if (sqlUpper.startsWith('INSERT INTO TREINOS')) {
+    const statusSql = sqlUpper.includes("'AGENDADO'")
+      ? 'agendado'
+      : sqlUpper.includes("'NAO_REALIZADO'")
+      ? 'nao_realizado'
+      : 'concluido';
     const id = estado.nextTreinoId++;
     const novo: Treino = {
       id,
@@ -144,7 +159,7 @@ function executarRunSync(sqlBruto: string, ...rawParams: unknown[]): SQLiteRunRe
       duracao: Number(params[2] ?? 0),
       grupo_muscular: String(params[3] ?? ''),
       observacoes: params[4] != null ? String(params[4]) : null,
-      status: (params[5] != null ? String(params[5]) : 'concluido') as StatusTreino,
+      status: (params[5] != null ? String(params[5]) : statusSql) as StatusTreino,
       horario: params[6] !== undefined ? (params[6] != null ? String(params[6]) : null) : '18:00',
       repetir: (params[7] != null ? String(params[7]) : 'uma_vez') as Treino['repetir'],
     };
@@ -612,14 +627,18 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
       }) as unknown as T[];
   }
 
-  if (sqlUpper.startsWith('SELECT DISTINCT DATA FROM TREINOS WHERE DATA IN')) {
-    const datasSet = new Set(params.map(String));
-    const encontradas = new Set<string>();
-    for (const t of estado.treinos) {
-      if (datasSet.has(t.data)) {
-        encontradas.add(t.data);
+  if (sqlUpper.startsWith('SELECT DISTINCT DATA FROM TREINOS')) {
+    if (sqlUpper.includes('WHERE DATA IN')) {
+      const datasSet = new Set(params.map(String));
+      const encontradas = new Set<string>();
+      for (const t of estado.treinos) {
+        if (datasSet.has(t.data)) {
+          encontradas.add(t.data);
+        }
       }
+      return Array.from(encontradas).map((data) => ({ data })) as unknown as T[];
     }
+    const encontradas = new Set(estado.treinos.map((t) => t.data));
     return Array.from(encontradas).map((data) => ({ data })) as unknown as T[];
   }
 
@@ -683,28 +702,35 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
   }
 
   if (sqlUpper.startsWith('SELECT DATA AS DATA_MAX FROM TREINOS')) {
-    if (estado.treinos.length === 0) return [];
-    const ordenado = estado.treinos
+    const concluidos = estado.treinos.filter((t) => t.status === 'concluido');
+    if (concluidos.length === 0) return [];
+    const ordenado = concluidos
       .slice()
       .sort((a, b) => chaveDataIso(b.data).localeCompare(chaveDataIso(a.data)));
     return [{ data_max: ordenado[0].data }] as unknown as T[];
   }
 
   if (sqlUpper.includes('COUNT(ID) AS TOTAL_TREINOS') && sqlUpper.includes('FROM TREINOS')) {
-    const total_treinos = estado.treinos.length;
-    const tempo_total = estado.treinos.reduce((acc, t) => acc + (t.duracao || 0), 0);
+    const concluidos = estado.treinos.filter((t) => t.status === 'concluido');
+    const total_treinos = concluidos.length;
+    const tempo_total = concluidos.reduce((acc, t) => acc + (t.duracao || 0), 0);
     return [{ total_treinos, tempo_total }] as unknown as T[];
   }
 
   if (sqlUpper.includes('COUNT(ID) AS TOTAL_SERIES') && sqlUpper.includes('FROM EXERCICIOS')) {
-    const total_series = estado.exercicios.length;
-    const volume_total = estado.exercicios.reduce((acc, e) => acc + e.repeticoes * e.carga, 0);
+    const idsConcluidos = new Set(
+      estado.treinos.filter((t) => t.status === 'concluido').map((t) => t.id)
+    );
+    const exsConcluidos = estado.exercicios.filter((e) => idsConcluidos.has(e.treino_id));
+    const total_series = exsConcluidos.length;
+    const volume_total = exsConcluidos.reduce((acc, e) => acc + e.repeticoes * e.carga, 0);
     return [{ total_series, volume_total }] as unknown as T[];
   }
 
   if (sqlUpper.includes('GRUPO_MUSCULAR, COUNT(ID) AS TOTAL FROM TREINOS')) {
     const contagem = new Map<string, number>();
     for (const t of estado.treinos) {
+      if (t.status !== 'concluido') continue;
       contagem.set(t.grupo_muscular, (contagem.get(t.grupo_muscular) ?? 0) + 1);
     }
     const lista = Array.from(contagem.entries())
@@ -716,6 +742,7 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
   if (sqlUpper.includes('GRUPO_MUSCULAR AS GRUPO, COUNT(ID) AS QUANTIDADE FROM TREINOS')) {
     const contagem = new Map<string, number>();
     for (const t of estado.treinos) {
+      if (t.status !== 'concluido') continue;
       contagem.set(t.grupo_muscular, (contagem.get(t.grupo_muscular) ?? 0) + 1);
     }
     return Array.from(contagem.entries())
@@ -725,7 +752,7 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
 
   if (sqlUpper.includes('T.ID AS TREINO_ID, T.NOME AS TREINO_NOME')) {
     return estado.treinos
-      .slice()
+      .filter((t) => t.status === 'concluido')
       .sort((a, b) => chaveDataIso(a.data).localeCompare(chaveDataIso(b.data)) || a.id - b.id)
       .map((t) => {
         const exs = estado.exercicios.filter((e) => e.treino_id === t.id);
@@ -742,8 +769,12 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
   }
 
   if (sqlUpper.includes('COUNT(DISTINCT E.TREINO_ID) AS TOTALTREINOS FROM EXERCICIOS E')) {
+    const idsConcluidos = new Set(
+      estado.treinos.filter((t) => t.status === 'concluido').map((t) => t.id)
+    );
     const porNome = new Map<string, Set<number>>();
     for (const e of estado.exercicios) {
+      if (!idsConcluidos.has(e.treino_id)) continue;
       const conj = porNome.get(e.nome) ?? new Set<number>();
       conj.add(e.treino_id);
       porNome.set(e.nome, conj);
@@ -755,7 +786,9 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
 
   if (sqlUpper.includes('MAX(E.CARGA) AS CARGA_MAXIMA') && sqlUpper.includes('WHERE E.NOME = ?')) {
     const nomeExercicio = String(params[0]);
-    const treinoMap = new Map(estado.treinos.map((t) => [t.id, t]));
+    const treinoMap = new Map(
+      estado.treinos.filter((t) => t.status === 'concluido').map((t) => [t.id, t])
+    );
     const porTreino = new Map<number, Exercicio[]>();
 
     for (const e of estado.exercicios) {
