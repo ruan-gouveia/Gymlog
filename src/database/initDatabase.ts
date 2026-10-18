@@ -35,7 +35,8 @@ export const SCRIPT_CRIACAO_TABELAS = `
     nome_usuario TEXT NOT NULL DEFAULT 'Matheus Silva',
     lembretes_ativo INTEGER NOT NULL DEFAULT 1,
     horario_lembretes TEXT DEFAULT '18:00',
-    dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex'
+    dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex',
+    antecedencia_lembrete INTEGER NOT NULL DEFAULT 30
   );
 `;
 
@@ -90,13 +91,32 @@ export function migrarBanco(db: SQLiteDatabase): void {
         nome_usuario TEXT NOT NULL DEFAULT 'Matheus Silva',
         lembretes_ativo INTEGER NOT NULL DEFAULT 1,
         horario_lembretes TEXT DEFAULT '18:00',
-        dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex'
+        dias_lembretes TEXT DEFAULT 'Seg, Qua e Sex',
+        antecedencia_lembrete INTEGER NOT NULL DEFAULT 30
       );
     `);
 
+    const colunasConfig = db.getAllSync<{ name: string }>(
+      'PRAGMA table_info(configuracoes_usuario);'
+    );
+    const nomesColunasConfig = new Set(colunasConfig.map((c) => c.name));
+
+    if (!nomesColunasConfig.has('antecedencia_lembrete')) {
+      try {
+        db.runSync(
+          'ALTER TABLE configuracoes_usuario ADD COLUMN antecedencia_lembrete INTEGER NOT NULL DEFAULT 30;'
+        );
+        console.log(
+          "[Migração] Coluna 'antecedencia_lembrete' adicionada à tabela configuracoes_usuario."
+        );
+      } catch (e) {
+        console.warn("[Migração] Aviso ao adicionar coluna 'antecedencia_lembrete':", e);
+      }
+    }
+
     db.runSync(`
-      INSERT OR IGNORE INTO configuracoes_usuario (id, meta_semanal, nome_usuario, lembretes_ativo, horario_lembretes, dias_lembretes)
-      VALUES (1, 3, 'Matheus Silva', 1, '18:00', 'Seg, Qua e Sex');
+      INSERT OR IGNORE INTO configuracoes_usuario (id, meta_semanal, nome_usuario, lembretes_ativo, horario_lembretes, dias_lembretes, antecedencia_lembrete)
+      VALUES (1, 3, 'Matheus Silva', 1, '18:00', 'Seg, Qua e Sex', 30);
     `);
 
     db.runSync('CREATE INDEX IF NOT EXISTS idx_treinos_data_status ON treinos(data, status);');
