@@ -39,23 +39,31 @@ export function BarraDescansoFlutuante({
   const disparouRef = useRef(false);
 
   useEffect(() => {
-    if (!acabou || disparouRef.current) return;
+    if (!acabou) {
+      disparouRef.current = false;
+      return;
+    }
+    if (disparouRef.current) return;
     disparouRef.current = true;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    onEncerrar();
-  }, [acabou, onEncerrar]);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  }, [acabou]);
 
-  const fracao = Math.min(1, restanteMs / descanso.totalMs);
-  const deslocamento = CIRCUNFERENCIA * (1 - fracao);
+  const fracao = descanso.totalMs > 0 ? Math.min(1, Math.max(0, restanteMs / descanso.totalMs)) : 0;
+  const deslocamento = acabou ? 0 : CIRCUNFERENCIA * (1 - fracao);
+  const corDestaque = acabou ? '#10B981' : '#4F67ED';
 
   return (
     <View
-      className="absolute left-4 right-4 rounded-[24px] bg-white dark:bg-[#1C1E3A] border border-slate-200 dark:border-[#23264D] p-4"
+      className={`absolute left-4 right-4 rounded-[24px] p-4 ${
+        acabou
+          ? 'bg-[#ECFDF5] dark:bg-[#132A26] border-2 border-[#10B981] dark:border-[#34D399]'
+          : 'bg-white dark:bg-[#1C1E3A] border border-slate-200 dark:border-[#23264D]'
+      }`}
       style={{
         bottom: bottomInset + 12,
         elevation: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.15,
+        shadowColor: acabou ? '#10B981' : '#000',
+        shadowOpacity: acabou ? 0.25 : 0.15,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
       }}
@@ -67,7 +75,7 @@ export function BarraDescansoFlutuante({
               cx={TAMANHO / 2}
               cy={TAMANHO / 2}
               r={RAIO}
-              stroke="#94A3B8"
+              stroke={acabou ? '#10B981' : '#94A3B8'}
               strokeOpacity={0.25}
               strokeWidth={TRACO}
               fill="none"
@@ -76,7 +84,7 @@ export function BarraDescansoFlutuante({
               cx={TAMANHO / 2}
               cy={TAMANHO / 2}
               r={RAIO}
-              stroke="#4F67ED"
+              stroke={corDestaque}
               strokeWidth={TRACO}
               fill="none"
               strokeLinecap="round"
@@ -87,68 +95,92 @@ export function BarraDescansoFlutuante({
             />
           </Svg>
           <View className="absolute inset-0 items-center justify-center">
-            <Text
-              className="text-[13px] font-bold text-slate-900 dark:text-white"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
-              {formatarCronometro(Math.ceil(restanteMs / 1000))}
-            </Text>
+            {acabou ? (
+              <Feather name="check" size={24} color="#10B981" />
+            ) : (
+              <Text
+                className="text-[13px] font-bold text-slate-900 dark:text-white"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {formatarCronometro(Math.ceil(restanteMs / 1000))}
+              </Text>
+            )}
           </View>
         </View>
 
         <View className="flex-1 px-3">
-          <Text className="text-[14px] font-bold text-slate-900 dark:text-white">
-            {pausado ? 'Descanso pausado' : 'Descanso'}
+          <Text
+            className={`text-[15px] font-bold ${
+              acabou
+                ? 'text-[#065F46] dark:text-[#34D399]'
+                : 'text-slate-900 dark:text-white'
+            }`}
+          >
+            {acabou ? 'Descanso Finalizado!' : pausado ? 'Descanso pausado' : 'Descanso'}
           </Text>
-          {descanso.proximo && (
-            <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8] mt-0.5" numberOfLines={1}>
-              Próximo: {descanso.proximo}
+          {acabou ? (
+            <Text
+              className="text-[13px] font-medium text-[#047857] dark:text-[#A7F3D0] mt-0.5"
+              numberOfLines={1}
+            >
+              Hora de voltar ao treino!
             </Text>
+          ) : (
+            descanso.proximo && (
+              <Text
+                className="text-[12px] text-slate-400 dark:text-[#8E92B8] mt-0.5"
+                numberOfLines={1}
+              >
+                Próximo: {descanso.proximo}
+              </Text>
+            )
           )}
         </View>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Pular descanso"
+          accessibilityLabel={acabou ? 'Fechar aviso de descanso' : 'Pular descanso'}
           onPress={onEncerrar}
           hitSlop={10}
           activeOpacity={0.7}
         >
-          <Feather name="x" size={20} color="#8E92B8" />
+          <Feather name="x" size={20} color={acabou ? '#059669' : '#8E92B8'} />
         </TouchableOpacity>
       </View>
 
-      <View className="flex-row items-center justify-between mt-3">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Diminuir 15 segundos"
-          onPress={() => onAjustar(-AJUSTE_DESCANSO_SEGUNDOS)}
-          activeOpacity={0.7}
-          className="h-11 px-5 rounded-2xl bg-slate-100 dark:bg-[#23264D] items-center justify-center"
-        >
-          <Text className="text-[14px] font-bold text-slate-700 dark:text-white">-15s</Text>
-        </TouchableOpacity>
+      {!acabou && (
+        <View className="flex-row items-center justify-between mt-3">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Diminuir 15 segundos"
+            onPress={() => onAjustar(-AJUSTE_DESCANSO_SEGUNDOS)}
+            activeOpacity={0.7}
+            className="h-11 px-5 rounded-2xl bg-slate-100 dark:bg-[#23264D] items-center justify-center"
+          >
+            <Text className="text-[14px] font-bold text-slate-700 dark:text-white">-15s</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={pausado ? 'Retomar descanso' : 'Pausar descanso'}
-          onPress={onAlternarPausa}
-          activeOpacity={0.8}
-          className="w-14 h-14 rounded-full bg-[#4F67ED] items-center justify-center"
-        >
-          <Feather name={pausado ? 'play' : 'pause'} size={22} color="#FFFFFF" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={pausado ? 'Retomar descanso' : 'Pausar descanso'}
+            onPress={onAlternarPausa}
+            activeOpacity={0.8}
+            className="w-14 h-14 rounded-full bg-[#4F67ED] items-center justify-center"
+          >
+            <Feather name={pausado ? 'play' : 'pause'} size={22} color="#FFFFFF" />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Aumentar 15 segundos"
-          onPress={() => onAjustar(AJUSTE_DESCANSO_SEGUNDOS)}
-          activeOpacity={0.7}
-          className="h-11 px-5 rounded-2xl bg-slate-100 dark:bg-[#23264D] items-center justify-center"
-        >
-          <Text className="text-[14px] font-bold text-slate-700 dark:text-white">+15s</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Aumentar 15 segundos"
+            onPress={() => onAjustar(AJUSTE_DESCANSO_SEGUNDOS)}
+            activeOpacity={0.7}
+            className="h-11 px-5 rounded-2xl bg-slate-100 dark:bg-[#23264D] items-center justify-center"
+          >
+            <Text className="text-[14px] font-bold text-slate-700 dark:text-white">+15s</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

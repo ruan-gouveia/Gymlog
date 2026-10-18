@@ -63,7 +63,7 @@ export function descreverProximaSerie(exercicios: ExercicioAoVivo[]): string | n
 }
 
 export function restanteDoDescansoMs(descanso: DescansoAtivo, agora: number): number {
-  if (descanso.restanteMs !== null) return descanso.restanteMs;
+  if (descanso.restanteMs !== null) return Math.max(0, descanso.restanteMs);
   return Math.max(0, (descanso.fimEm ?? agora) - agora);
 }
 
@@ -152,9 +152,12 @@ export const useLiveWorkoutStore = create<LiveWorkoutStore>((set, get) => ({
         return { descanso: { ...d, restanteMs, totalMs: Math.max(d.totalMs, restanteMs) } };
       }
 
-      const fimEm = (d.fimEm ?? Date.now()) + deltaMs;
+      const agora = Date.now();
+      const restanteAtual = Math.max(0, (d.fimEm ?? agora) - agora);
+      const novoRestante = Math.max(0, restanteAtual + deltaMs);
+      const fimEm = agora + novoRestante;
       return {
-        descanso: { ...d, fimEm, totalMs: Math.max(d.totalMs, fimEm - Date.now()) },
+        descanso: { ...d, fimEm, totalMs: Math.max(d.totalMs, novoRestante) },
       };
     }),
 
