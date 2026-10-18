@@ -4,7 +4,7 @@ import type { ConfiguracoesUsuario } from './tipos';
 const CONFIG_PADRAO: ConfiguracoesUsuario = {
   id: 1,
   meta_semanal: 3,
-  nome_usuario: 'Matheus Silva',
+  nome_usuario: 'Usuário',
   lembretes_ativo: 1,
   horario_lembretes: '18:00',
   dias_lembretes: 'Seg, Qua e Sex',

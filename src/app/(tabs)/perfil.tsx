@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ModalLembretes } from '@/components/perfil/ModalLembretes';
 import {
+  ajustarStatusTemporal,
   db,
   exportarBancoParaJson,
   obterConfiguracaoLembretes,
@@ -129,16 +130,19 @@ export default function Perfil() {
         `SELECT nome, grupo_muscular, horario, data
            FROM treinos
           WHERE status = 'agendado'
-          ORDER BY substr(data, 7, 4) || substr(data, 4, 2) || substr(data, 1, 2) ASC, id ASC
-          LIMIT 1;`
+          ORDER BY substr(data, 7, 4) || substr(data, 4, 2) || substr(data, 1, 2) ASC, horario ASC, id ASC;`
       );
 
-      if (agendados.length > 0) {
+      const proximoFuturo = agendados.find(
+        (item) => ajustarStatusTemporal('agendado', item.data, item.horario) === 'agendado'
+      );
+
+      if (proximoFuturo) {
         setProximoTreino({
-          nome: agendados[0].nome,
-          grupoMuscular: agendados[0].grupo_muscular || 'Peito',
-          horario: agendados[0].horario || '18:00',
-          data: agendados[0].data,
+          nome: proximoFuturo.nome,
+          grupoMuscular: proximoFuturo.grupo_muscular || 'Peito',
+          horario: proximoFuturo.horario || '18:00',
+          data: proximoFuturo.data,
         });
       } else {
         setProximoTreino(null);
@@ -237,16 +241,16 @@ export default function Perfil() {
         contentContainerStyle={{ paddingBottom: 40, paddingTop: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Dados do Usuário (Genéricos/Mockados conforme especificação) */}
+        {/* Dados do Usuário Genéricos */}
         <View className="items-center mt-2 mb-5">
           <View className="h-20 w-20 items-center justify-center rounded-full bg-[#4F67ED] mb-3 shadow-md shadow-indigo-500/20">
-            <Text className="text-3xl font-extrabold text-white">M</Text>
+            <Feather name="user" size={36} color="#FFFFFF" />
           </View>
           <Text className="text-[22px] font-bold text-slate-900 dark:text-white">
-            Matheus Silva
+            Usuário
           </Text>
           <Text className="text-[13px] font-medium text-slate-400 dark:text-[#8E92B8] mt-0.5">
-            @matheus.silva · Nível Intermediário
+            usuario@gmail.com
           </Text>
         </View>
 

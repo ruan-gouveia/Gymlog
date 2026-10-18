@@ -236,7 +236,7 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
 
       db.runSync(`
         INSERT OR IGNORE INTO configuracoes_usuario (id, meta_semanal, nome_usuario, lembretes_ativo, horario_lembretes, dias_lembretes)
-        VALUES (1, 3, 'Matheus Silva', 1, '18:00', 'Seg, Qua e Sex');
+        VALUES (1, 3, 'Usuário', 1, '18:00', 'Seg, Qua e Sex');
       `);
 
       console.log(`[Seed] Sucesso: ${treinosParaInserir.length} treinos variados inseridos nas últimas 6 semanas!`);

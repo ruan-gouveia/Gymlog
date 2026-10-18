@@ -9,7 +9,11 @@ export type TreinoResumo = Pick<
   volume: number;
 };
 
-export function ajustarStatusTemporal(status: StatusTreino, dataStr: string): StatusTreino {
+export function ajustarStatusTemporal(
+  status: StatusTreino,
+  dataStr: string,
+  horarioStr?: string | null
+): StatusTreino {
   if (status !== 'agendado') return status;
 
   const partes = dataStr.trim().split('/');
@@ -20,11 +24,21 @@ export function ajustarStatusTemporal(status: StatusTreino, dataStr: string): St
   const ano = parseInt(partes[2], 10);
   const dataTreino = new Date(ano, mes, dia, 0, 0, 0);
 
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  const agora = new Date();
+  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0);
 
   if (dataTreino.getTime() < hoje.getTime()) {
     return 'nao_realizado';
+  }
+
+  if (dataTreino.getTime() === hoje.getTime() && horarioStr) {
+    const [h, m] = horarioStr.trim().split(':').map(Number);
+    if (!isNaN(h) && !isNaN(m)) {
+      const dataHoraTreino = new Date(ano, mes, dia, h, m, 0);
+      if (dataHoraTreino.getTime() < agora.getTime()) {
+        return 'nao_realizado';
+      }
+    }
   }
 
   return status;
@@ -54,7 +68,7 @@ export function listarTreinos(): TreinoResumo[] {
 
   return lista.map((t) => ({
     ...t,
-    status: ajustarStatusTemporal(t.status, t.data),
+    status: ajustarStatusTemporal(t.status, t.data, t.horario),
   }));
 }
 
@@ -155,7 +169,7 @@ export function buscarTreinoPorId(id: number): TreinoDetalhe | null {
     duracao,
     grupo_muscular,
     observacoes,
-    status: ajustarStatusTemporal(status ?? 'concluido', data),
+    status: ajustarStatusTemporal(status ?? 'concluido', data, horario),
     horario: horario ?? null,
     repetir: (repetir as RepetirTreino) ?? 'uma_vez',
     exercicios,

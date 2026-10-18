@@ -237,6 +237,7 @@ export function obterResumoSemana(dataRef?: Date): ResumoSemana {
 }
 
 export function obterTreinosDoDia(dataBr: string): TreinoDiaItem[] {
+  const hojeStr = formatarDataBr(new Date());
   const linhas = db.getAllSync<{
     id: number;
     nome: string;
@@ -282,7 +283,7 @@ export function obterTreinosDoDia(dataBr: string): TreinoDiaItem[] {
         horario: l.horario,
         grupo_muscular: l.grupo_muscular,
         duracao: l.duracao,
-        status: ajustarStatusTemporal(l.status, l.data),
+        status: ajustarStatusTemporal(l.status, l.data, l.horario),
         exerciciosNomes: new Set(),
         totalSeries: 0,
         volume: 0,
@@ -299,23 +300,24 @@ export function obterTreinosDoDia(dataBr: string): TreinoDiaItem[] {
     }
   }
 
-  return Array.from(treinosMap.values()).map((t) => ({
-    id: t.id,
-    nome: t.nome,
-    data: t.data,
-    horario: t.horario,
-    grupo_muscular: t.grupo_muscular,
-    duracao: t.duracao,
-    status: t.status,
-    totalExercicios: t.exerciciosNomes.size,
-    totalSeries: t.totalSeries,
-    volume: t.volume,
-  }));
+  return Array.from(treinosMap.values())
+    .filter((t) => !(dataBr === hojeStr && t.status === 'nao_realizado'))
+    .map((t) => ({
+      id: t.id,
+      nome: t.nome,
+      data: t.data,
+      horario: t.horario,
+      grupo_muscular: t.grupo_muscular,
+      duracao: t.duracao,
+      status: t.status,
+      totalExercicios: t.exerciciosNomes.size,
+      totalSeries: t.totalSeries,
+      volume: t.volume,
+    }));
 }
 
-export function obterTreinosPendentes(dataHojeBr?: string): TreinoPendenteItem[] {
-  const hoje = dataHojeBr ? parseDataBr(dataHojeBr) : new Date();
-  hoje.setHours(0, 0, 0, 0);
+export function obterTreinosPendentes(_dataHojeBr?: string): TreinoPendenteItem[] {
+  const hojeStr = formatarDataBr(new Date());
 
   const linhas = db.getAllSync<{
     id: number;
@@ -327,22 +329,26 @@ export function obterTreinosPendentes(dataHojeBr?: string): TreinoPendenteItem[]
   }>(
     `SELECT id, nome, data, grupo_muscular, horario, status
        FROM treinos
-      WHERE status = 'agendado'
-      ORDER BY substr(data, 7, 4) || substr(data, 4, 2) || substr(data, 1, 2) ASC`
+      WHERE status IN ('agendado', 'nao_realizado')
+      ORDER BY substr(data, 7, 4) || substr(data, 4, 2) || substr(data, 1, 2) ASC, horario ASC, id ASC`
   );
 
   const pendentes: TreinoPendenteItem[] = [];
 
   for (const l of linhas) {
-    const dataTreino = parseDataBr(l.data);
-    dataTreino.setHours(0, 0, 0, 0);
+    const statusCalculado = ajustarStatusTemporal('agendado', l.data, l.horario);
 
-    if (dataTreino.getTime() < hoje.getTime()) {
+    if (statusCalculado === 'nao_realizado') {
+      const dataTreino = parseDataBr(l.data);
+      const baseLegivel = formatarDataLegivel(dataTreino);
+      const dataLegivel =
+        l.data === hojeStr && l.horario ? `${baseLegivel} às ${l.horario}` : baseLegivel;
+
       pendentes.push({
         id: l.id,
         nome: l.nome,
         data: l.data,
-        dataLegivel: formatarDataLegivel(dataTreino),
+        dataLegivel,
         grupo_muscular: l.grupo_muscular,
         horario: l.horario,
       });

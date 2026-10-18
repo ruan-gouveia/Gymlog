@@ -14,20 +14,19 @@ import {
   excluirTreino,
   formatarDataBr,
   formatarDataExtenso,
-  obterConfiguracoesUsuario,
   obterDiasAgenda,
   obterResumoSemana,
   obterTreinosDoDia,
   obterTreinosPendentes,
   obterUltimosTreinos,
   reagendarTreinoParaHoje,
-  type ConfiguracoesUsuario,
   type DiaAgendaItem,
   type ResumoSemana,
   type TreinoDiaItem,
   type TreinoPendenteItem,
   type UltimoTreinoItem,
 } from '@/database';
+import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
 
 export default function InicioDashboard() {
@@ -35,14 +34,6 @@ export default function InicioDashboard() {
 
   const dataHojeStr = useMemo(() => formatarDataBr(new Date()), []);
   const [dataSelecionada, setDataSelecionada] = useState<string>(dataHojeStr);
-
-  const [configUsuario, setConfigUsuario] = useState<ConfiguracoesUsuario | null>(() => {
-    try {
-      return obterConfiguracoesUsuario();
-    } catch {
-      return null;
-    }
-  });
 
   const [resumoSemana, setResumoSemana] = useState<ResumoSemana>(() => {
     try {
@@ -70,7 +61,7 @@ export default function InicioDashboard() {
 
   const [treinosPendentes, setTreinosPendentes] = useState<TreinoPendenteItem[]>(() => {
     try {
-      return obterTreinosPendentes(dataHojeStr);
+      return obterTreinosPendentes();
     } catch {
       return [];
     }
@@ -94,29 +85,21 @@ export default function InicioDashboard() {
 
   const carregarDados = useCallback(() => {
     try {
-      const config = obterConfiguracoesUsuario();
-      setConfigUsuario(config);
       setResumoSemana(obterResumoSemana());
       setTreinosDoDia(obterTreinosDoDia(dataSelecionada));
-      setTreinosPendentes(obterTreinosPendentes(dataHojeStr));
+      setTreinosPendentes(obterTreinosPendentes());
       setUltimosTreinos(obterUltimosTreinos(3));
       setDiasAgenda(obterDiasAgenda(new Date()));
     } catch (error) {
       console.error('[Dashboard] Erro ao carregar dados:', error);
     }
-  }, [dataSelecionada, dataHojeStr]);
+  }, [dataSelecionada]);
 
   useFocusEffect(
     useCallback(() => {
       carregarDados();
     }, [carregarDados])
   );
-
-  const nomeExibicao = useMemo(() => {
-    const nome = configUsuario?.nome_usuario?.trim();
-    if (!nome) return 'Ruan';
-    return nome.split(' ')[0];
-  }, [configUsuario?.nome_usuario]);
 
   const dataExtenso = useMemo(() => formatarDataExtenso(new Date()), []);
 
@@ -132,6 +115,7 @@ export default function InicioDashboard() {
   const handleReagendar = (treinoId: number) => {
     try {
       reagendarTreinoParaHoje(treinoId);
+      void sincronizarNotificacoesAgendadas();
       showToast('Treino reagendado para hoje com sucesso!');
       carregarDados();
     } catch (error) {
@@ -149,6 +133,7 @@ export default function InicioDashboard() {
         onPress: () => {
           try {
             excluirTreino(treinoId);
+            void sincronizarNotificacoesAgendadas();
             showToast('Treino excluído com sucesso.');
             carregarDados();
           } catch (error) {
@@ -172,7 +157,7 @@ export default function InicioDashboard() {
               {dataExtenso}
             </Text>
             <Text className="text-[28px] font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
-              Olá, {nomeExibicao}!
+              Olá, bom treino!
             </Text>
           </View>
 

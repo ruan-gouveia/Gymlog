@@ -36,10 +36,6 @@ function formatarDataBr(data: Date): string {
   return `${dia}/${mes}/${data.getFullYear()}`;
 }
 
-function formatarDataHoje(): string {
-  return formatarDataBr(new Date());
-}
-
 function somarDiasDataBr(dataBr: string, dias: number): string {
   const [dia, mes, ano] = dataBr.split('/').map(Number);
   return formatarDataBr(new Date(ano, mes - 1, dia + dias));
@@ -204,16 +200,52 @@ export function concluirTreinoAoVivo(
 }
 
 export function reagendarTreinoParaHoje(id: number, novoHorario?: string): void {
-  const hoje = formatarDataHoje();
+  const agora = new Date();
+  const hoje = formatarDataBr(agora);
 
   db.withTransactionSync(() => {
+    let horarioFinal = novoHorario ?? null;
+
+    if (!horarioFinal) {
+      const atual = db.getAllSync<{ horario: string | null }>(
+        'SELECT horario FROM treinos WHERE id = ? LIMIT 1;',
+        [id]
+      );
+      const horarioSalvo = atual[0]?.horario;
+      if (horarioSalvo) {
+        const [h, m] = horarioSalvo.trim().split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          const dataHoraHoje = new Date(
+            agora.getFullYear(),
+            agora.getMonth(),
+            agora.getDate(),
+            h,
+            m,
+            0
+          );
+          if (dataHoraHoje.getTime() <= agora.getTime()) {
+            const futuro = new Date(agora.getTime() + 60 * 60 * 1000);
+            if (futuro.getDate() !== agora.getDate()) {
+              horarioFinal = '23:59';
+            } else {
+              const fh = String(futuro.getHours()).padStart(2, '0');
+              const fm = String(futuro.getMinutes()).padStart(2, '0');
+              horarioFinal = `${fh}:${fm}`;
+            }
+          }
+        }
+      } else {
+        horarioFinal = '23:59';
+      }
+    }
+
     db.runSync(
       `UPDATE treinos
           SET data = ?,
               status = 'agendado',
               horario = COALESCE(?, horario)
         WHERE id = ?`,
-      [hoje, novoHorario ?? null, id]
+      [hoje, horarioFinal, id]
     );
   });
 }
