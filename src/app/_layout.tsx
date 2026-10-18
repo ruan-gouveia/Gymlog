@@ -97,6 +97,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" /> 
+          <Stack.Screen name="treino-ativo/[id]" options={{ gestureEnabled: false }} />
         </Stack>
         <Toast />
       </ThemeProvider>

@@ -2,7 +2,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
-import type { TreinoDiaItem } from '@/database/inicioConsultas';
+import { formatarDataBr, type TreinoDiaItem } from '@/database/inicioConsultas';
 
 type CardTreinoHojeProps = {
   treino?: TreinoDiaItem | null;
@@ -22,6 +22,7 @@ export function CardTreinoHoje({
   onAgendar,
 }: CardTreinoHojeProps) {
   const listaTreinos = treinos ?? (treino ? [treino] : []);
+  const hojeStr = formatarDataBr(new Date());
 
   if (listaTreinos.length === 0) {
     return (
@@ -65,6 +66,7 @@ export function CardTreinoHoje({
         {listaTreinos.map((t) => {
           const ehConcluido = t.status === 'concluido';
           const ehAgendado = t.status === 'agendado';
+          const podeIniciar = ehAgendado && t.data === hojeStr;
 
           return (
             <TouchableOpacity
@@ -115,7 +117,7 @@ export function CardTreinoHoje({
                 </View>
               </View>
 
-              {ehAgendado && (
+              {podeIniciar && (
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel="Iniciar treino"
@@ -126,6 +128,12 @@ export function CardTreinoHoje({
                   <Feather name="play" size={17} color="#FFFFFF" />
                   <Text className="ml-2 text-white text-[15px] font-bold">Iniciar treino</Text>
                 </TouchableOpacity>
+              )}
+
+              {ehAgendado && !podeIniciar && (
+                <Text className="mt-3 text-[12px] text-slate-400 dark:text-[#8E92B8]">
+                  Disponível para iniciar em {t.data}
+                </Text>
               )}
             </TouchableOpacity>
           );
