@@ -6,11 +6,13 @@ import { formatarVolume } from '@/utils/formatacao';
 type CardsResumoInicioProps = {
   volumeSemana: number;
   proximoTreino: string | null;
+  proximoTreinoData?: string | null;
 };
 
 export function CardsResumoInicio({
   volumeSemana,
   proximoTreino,
+  proximoTreinoData,
 }: CardsResumoInicioProps) {
   return (
     <View className="flex-row gap-3 mt-5">
@@ -30,16 +32,28 @@ export function CardsResumoInicio({
         <Text className="text-[13px] font-medium text-slate-400 dark:text-[#8E92B8]">
           Próximo treino
         </Text>
-        <Text
-          className={`mt-1 font-bold ${
-            proximoTreino
-              ? 'text-[22px] font-black text-slate-900 dark:text-white'
-              : 'text-[13px] font-medium text-slate-400 dark:text-[#8E92B8] leading-tight'
-          }`}
-          numberOfLines={2}
-        >
-          {proximoTreino ?? 'Nenhum treino posterior agendado'}
-        </Text>
+        {proximoTreino ? (
+          <View className="mt-1">
+            <Text
+              className="text-[20px] font-black text-slate-900 dark:text-white"
+              numberOfLines={1}
+            >
+              {proximoTreino}
+            </Text>
+            {proximoTreinoData && (
+              <Text className="text-[12px] font-semibold text-slate-400 dark:text-[#8E92B8] mt-0.5">
+                {proximoTreinoData}
+              </Text>
+            )}
+          </View>
+        ) : (
+          <Text
+            className="mt-1 text-[13px] font-medium text-slate-400 dark:text-[#8E92B8] leading-tight"
+            numberOfLines={2}
+          >
+            Nenhum treino posterior agendado
+          </Text>
+        )}
       </View>
     </View>
   );

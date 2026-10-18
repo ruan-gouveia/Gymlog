@@ -21,6 +21,8 @@ export type ExercicioParaSalvar = {
   concluida?: number;
 };
 
+export const OCORRENCIAS_SEMANAIS = 4;
+
 function formatarHoraAtual(): string {
   const agora = new Date();
   const horas = String(agora.getHours()).padStart(2, '0');
@@ -28,12 +30,19 @@ function formatarHoraAtual(): string {
   return `${horas}:${minutos}`;
 }
 
+function formatarDataBr(data: Date): string {
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
 function formatarDataHoje(): string {
-  const agora = new Date();
-  const dia = String(agora.getDate()).padStart(2, '0');
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const ano = agora.getFullYear();
-  return `${dia}/${mes}/${ano}`;
+  return formatarDataBr(new Date());
+}
+
+function somarDiasDataBr(dataBr: string, dias: number): string {
+  const [dia, mes, ano] = dataBr.split('/').map(Number);
+  return formatarDataBr(new Date(ano, mes - 1, dia + dias));
 }
 
 function inserirExercicios(treinoId: number, exercicios: ExercicioParaSalvar[]): void {
@@ -54,6 +63,26 @@ function inserirExercicios(treinoId: number, exercicios: ExercicioParaSalvar[]):
   }
 }
 
+function inserirTreino(treino: NovoTreino, exercicios: ExercicioParaSalvar[]): number {
+  const resultado = db.runSync(
+    `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes, status, horario, repetir) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      treino.nome,
+      treino.data,
+      treino.duracao,
+      treino.grupo_muscular,
+      treino.observacoes ?? null,
+      treino.status ?? 'concluido',
+      treino.horario ?? null,
+      treino.repetir ?? 'uma_vez',
+    ]
+  );
+
+  inserirExercicios(resultado.lastInsertRowId, exercicios);
+  return resultado.lastInsertRowId;
+}
+
 export function salvarTreinoComExercicios(
   treino: NovoTreino,
   exercicios: ExercicioParaSalvar[]
@@ -61,27 +90,7 @@ export function salvarTreinoComExercicios(
   let treinoId = 0;
 
   db.withTransactionSync(() => {
-    const status = treino.status ?? 'concluido';
-    const horario = treino.horario ?? null;
-    const repetir = treino.repetir ?? 'uma_vez';
-
-    const resultadoTreino = db.runSync(
-      `INSERT INTO treinos (nome, data, duracao, grupo_muscular, observacoes, status, horario, repetir) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        treino.nome,
-        treino.data,
-        treino.duracao,
-        treino.grupo_muscular,
-        treino.observacoes ?? null,
-        status,
-        horario,
-        repetir,
-      ]
-    );
-
-    treinoId = resultadoTreino.lastInsertRowId;
-    inserirExercicios(treinoId, exercicios);
+    treinoId = inserirTreino(treino, exercicios);
   });
 
   return treinoId;
@@ -135,6 +144,33 @@ export function agendarTreino(
     },
     exercicios
   );
+}
+
+export function agendarTreinoRecorrente(
+  treino: NovoTreino,
+  exercicios: ExercicioParaSalvar[],
+  ocorrencias: number = OCORRENCIAS_SEMANAIS
+): number[] {
+  const ids: number[] = [];
+
+  db.withTransactionSync(() => {
+    for (let semana = 0; semana < ocorrencias; semana++) {
+      ids.push(
+        inserirTreino(
+          {
+            ...treino,
+            data: somarDiasDataBr(treino.data, semana * 7),
+            status: 'agendado',
+            horario: treino.horario ?? formatarHoraAtual(),
+            repetir: 'semanal',
+          },
+          exercicios
+        )
+      );
+    }
+  });
+
+  return ids;
 }
 
 export function concluirTreinoAoVivo(

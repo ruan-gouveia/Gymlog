@@ -9,6 +9,7 @@ export type ResumoSemana = {
   semanasSeguidas: number;
   volumeSemana: number;
   proximoTreino: string | null;
+  proximoTreinoData: string | null;
 };
 
 export type TreinoDiaItem = {
@@ -201,6 +202,7 @@ export function obterResumoSemana(dataRef?: Date): ResumoSemana {
   }
 
   let proximoTreino: string | null = null;
+  let proximoTreinoData: string | null = null;
   const proximosAgendados = db.getAllSync<{ nome: string; data: string; grupo_muscular: string }>(
     `SELECT nome, data, grupo_muscular
        FROM treinos
@@ -215,6 +217,7 @@ export function obterResumoSemana(dataRef?: Date): ResumoSemana {
     dataP.setHours(0, 0, 0, 0);
     if (dataP.getTime() >= amanhaInicio.getTime()) {
       proximoTreino = p.grupo_muscular || p.nome;
+      proximoTreinoData = formatarDataLegivel(dataP);
       break;
     }
   }
@@ -229,6 +232,7 @@ export function obterResumoSemana(dataRef?: Date): ResumoSemana {
     semanasSeguidas,
     volumeSemana,
     proximoTreino,
+    proximoTreinoData,
   };
 }
 
