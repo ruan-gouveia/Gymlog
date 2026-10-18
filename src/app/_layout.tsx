@@ -32,7 +32,7 @@ export default function LayoutRaiz() {
     }
   }, [tema, setColorScheme]);
 
-  const ehEscuro = colorScheme === 'dark' || tema === 'dark';
+  const ehEscuro = tema === 'system' ? colorScheme === 'dark' : tema === 'dark';
   const coresAtuais = ehEscuro ? coresEscuras : coresClaras;
 
   useEffect(() => {

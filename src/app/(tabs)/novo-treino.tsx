@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker, {
   DateTimePickerAndroid,
-  type DateTimePickerEvent,
+  type DateTimePickerChangeEvent,
 } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
@@ -33,6 +33,7 @@ import {
   type ExercicioParaSalvar,
   type NovoTreino,
 } from '@/database/treinoRepository';
+import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
 import { useAgendamentoStore } from '@/stores/useAgendamentoStore';
 
@@ -189,19 +190,17 @@ export default function AgendarTreino() {
         value: dataRef.getTime() < hoje.getTime() ? hoje : dataRef,
         mode: 'date',
         minimumDate: hoje,
-        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
-          if (event.type === 'set' && selectedDate) {
-            const hojeVerificacao = new Date();
-            hojeVerificacao.setHours(0, 0, 0, 0);
-            if (selectedDate.getTime() < hojeVerificacao.getTime()) {
-              Alert.alert('Data inválida', 'Escolha a data de hoje ou uma data futura.');
-              return;
-            }
-            const dia = String(selectedDate.getDate()).padStart(2, '0');
-            const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const ano = selectedDate.getFullYear();
-            onSelecionar(`${dia}/${mes}/${ano}`);
+        onValueChange: (_event: DateTimePickerChangeEvent, selectedDate: Date) => {
+          const hojeVerificacao = new Date();
+          hojeVerificacao.setHours(0, 0, 0, 0);
+          if (selectedDate.getTime() < hojeVerificacao.getTime()) {
+            Alert.alert('Data inválida', 'Escolha a data de hoje ou uma data futura.');
+            return;
           }
+          const dia = String(selectedDate.getDate()).padStart(2, '0');
+          const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const ano = selectedDate.getFullYear();
+          onSelecionar(`${dia}/${mes}/${ano}`);
         },
       });
     } else {
@@ -228,35 +227,33 @@ export default function AgendarTreino() {
         value: dataRef,
         mode: 'time',
         is24Hour: true,
-        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
-          if (event.type === 'set' && selectedDate) {
-            const dt = converterDataBr(dataAtualStr);
-            const agora = new Date();
-            if (dt) {
-              const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0);
-              const dataTreino = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0);
-              if (dataTreino.getTime() === hoje.getTime()) {
-                const dataHoraEscolhida = new Date(
-                  agora.getFullYear(),
-                  agora.getMonth(),
-                  agora.getDate(),
-                  selectedDate.getHours(),
-                  selectedDate.getMinutes(),
-                  0
+        onValueChange: (_event: DateTimePickerChangeEvent, selectedDate: Date) => {
+          const dt = converterDataBr(dataAtualStr);
+          const agora = new Date();
+          if (dt) {
+            const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0);
+            const dataTreino = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0);
+            if (dataTreino.getTime() === hoje.getTime()) {
+              const dataHoraEscolhida = new Date(
+                agora.getFullYear(),
+                agora.getMonth(),
+                agora.getDate(),
+                selectedDate.getHours(),
+                selectedDate.getMinutes(),
+                0
+              );
+              if (dataHoraEscolhida.getTime() < agora.getTime()) {
+                Alert.alert(
+                  'Horário inválido',
+                  'Não é possível selecionar horários passados para o dia de hoje.'
                 );
-                if (dataHoraEscolhida.getTime() < agora.getTime()) {
-                  Alert.alert(
-                    'Horário inválido',
-                    'Não é possível selecionar horários passados para o dia de hoje.'
-                  );
-                  return;
-                }
+                return;
               }
             }
-            const horas = String(selectedDate.getHours()).padStart(2, '0');
-            const minutos = String(selectedDate.getMinutes()).padStart(2, '0');
-            onSelecionar(`${horas}:${minutos}`);
           }
+          const horas = String(selectedDate.getHours()).padStart(2, '0');
+          const minutos = String(selectedDate.getMinutes()).padStart(2, '0');
+          onSelecionar(`${horas}:${minutos}`);
         },
       });
     } else {
@@ -354,6 +351,8 @@ export default function AgendarTreino() {
         agendarTreino(treino, exerciciosParaInserir);
         mensagem = 'Treino agendado com sucesso!';
       }
+
+      void sincronizarNotificacoesAgendadas();
 
       reset(valoresIniciais());
       limpar();
@@ -678,7 +677,7 @@ export default function AgendarTreino() {
                 is24Hour
                 minimumDate={new Date()}
                 display="spinner"
-                onChange={(_, d) => {
+                onValueChange={(_, d) => {
                   if (d) setDataHoraIOS(d);
                 }}
               />
