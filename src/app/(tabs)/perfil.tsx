@@ -1,16 +1,19 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useColorScheme } from 'nativewind';
-import React, { useCallback, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
+  useAnimatedValue,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +34,6 @@ import {
 } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/useThemeStore';
-import { agendarForcarBarraNavegacaoEscura } from '@/utils/sistemaNavegacao';
 
 type ProximoTreinoPreview = {
   nome: string;
@@ -49,29 +51,64 @@ function SwitchFielPrototipo({
   onAlternar: (novoValor: boolean) => void;
   accessibilityLabel: string;
 }) {
+  const [otimista, setOtimista] = useState<boolean | null>(null);
+  const ativoVisual = otimista ?? ativo;
+  const progresso = useAnimatedValue(ativo ? 1 : 0);
+
+  useEffect(() => {
+    Animated.spring(progresso, {
+      toValue: ativoVisual ? 1 : 0,
+      damping: 18,
+      stiffness: 240,
+      mass: 0.7,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [ativoVisual, progresso]);
+
+  const handlePress = () => {
+    const proximo = !ativoVisual;
+    setOtimista(proximo);
+
+    if (Platform.OS !== 'web') {
+      void Haptics.selectionAsync();
+    }
+
+    requestAnimationFrame(() => {
+      startTransition(() => {
+        onAlternar(proximo);
+        setOtimista(null);
+      });
+    });
+  };
+
+  const translateX = progresso.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 22],
+  });
+
   return (
     <Pressable
       accessibilityRole="switch"
-      accessibilityState={{ checked: ativo }}
+      accessibilityState={{ checked: ativoVisual }}
       accessibilityLabel={accessibilityLabel}
-      onPress={() => onAlternar(!ativo)}
+      onPress={handlePress}
       hitSlop={8}
       style={{
         width: 52,
         height: 30,
         borderRadius: 999,
         padding: 3,
-        backgroundColor: ativo ? '#5C7CFA' : '#E2E8F0',
+        backgroundColor: ativoVisual ? '#5C7CFA' : '#E2E8F0',
         justifyContent: 'center',
-        alignItems: ativo ? 'flex-end' : 'flex-start',
       }}
     >
-      <View
+      <Animated.View
         style={{
           width: 24,
           height: 24,
           borderRadius: 12,
           backgroundColor: '#FFFFFF',
+          transform: [{ translateX }],
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.15,
@@ -85,9 +122,9 @@ function SwitchFielPrototipo({
 
 export default function Perfil() {
   const router = useRouter();
-  const { colorScheme, setColorScheme } = useColorScheme();
-  const { tema, setTema } = useThemeStore();
-  const ehEscuro = tema === 'system' ? colorScheme === 'dark' : tema === 'dark';
+  const tema = useThemeStore((state) => state.tema);
+  const setTema = useThemeStore((state) => state.setTema);
+  const ehEscuro = tema === 'dark';
 
   useNotificacoesTreino(true);
 
@@ -171,12 +208,12 @@ export default function Perfil() {
     }
   };
 
-  const handleAlternarTemaEscuro = (ativarEscuro: boolean) => {
-    const novoTema = ativarEscuro ? 'dark' : 'light';
-    setTema(novoTema);
-    setColorScheme(novoTema);
-    agendarForcarBarraNavegacaoEscura();
-  };
+  const handleAlternarTemaEscuro = useCallback(
+    (ativarEscuro: boolean) => {
+      setTema(ativarEscuro ? 'dark' : 'light');
+    },
+    [setTema]
+  );
 
   const handleSalvarLembretes = async (ativo: boolean, antecedenciaMinutos: number) => {
     try {
@@ -241,7 +278,6 @@ export default function Perfil() {
         contentContainerStyle={{ paddingBottom: 40, paddingTop: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Dados do Usuário Genéricos */}
         <View className="items-center mt-2 mb-5">
           <View className="h-20 w-20 items-center justify-center rounded-full bg-[#4F67ED] mb-3 shadow-md shadow-indigo-500/20">
             <Feather name="user" size={36} color="#FFFFFF" />
@@ -254,7 +290,6 @@ export default function Perfil() {
           </Text>
         </View>
 
-        {/* Cards Superiores com Cálculos Reais do SQLite */}
         <View className="flex-row gap-3 mb-5">
           <View className="flex-1 items-center justify-center rounded-[20px] border border-[#EAEFF5] dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] py-4 px-2 shadow-sm">
             <Text className="text-2xl font-extrabold text-slate-900 dark:text-white">
@@ -284,9 +319,7 @@ export default function Perfil() {
           </View>
         </View>
 
-        {/* Lista de Configurações */}
         <View className="rounded-[24px] border border-[#EAEFF5] dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] px-4 py-2 mb-4 shadow-sm">
-          {/* Meta Semanal */}
           <View className="flex-row items-center justify-between py-3.5 border-b border-slate-100 dark:border-[#252852]/70">
             <View className="flex-row items-center gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
@@ -331,7 +364,6 @@ export default function Perfil() {
             </View>
           </View>
 
-          {/* Tema Escuro */}
           <View className="flex-row items-center justify-between py-3.5 border-b border-slate-100 dark:border-[#252852]/70">
             <View className="flex-row items-center gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
@@ -354,7 +386,6 @@ export default function Perfil() {
             />
           </View>
 
-          {/* Lembretes (abre ModalLembretes com seta >) */}
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Configurar lembretes de treino"
@@ -381,7 +412,6 @@ export default function Perfil() {
             <Feather name="chevron-right" size={20} color={ehEscuro ? '#6C7293' : '#94A3B8'} />
           </TouchableOpacity>
 
-          {/* Backup Local */}
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Exportar dados em JSON"
@@ -410,7 +440,6 @@ export default function Perfil() {
             )}
           </TouchableOpacity>
 
-          {/* Sobre o aplicativo */}
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Sobre o aplicativo GymLog"
@@ -452,7 +481,6 @@ export default function Perfil() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal de Lembretes */}
       <ModalLembretes
         visivel={modalLembretesVisivel}
         ativoInicial={lembretesAtivos}
@@ -463,7 +491,6 @@ export default function Perfil() {
         onSalvar={handleSalvarLembretes}
       />
 
-      {/* Modal Sobre o Aplicativo */}
       <Modal
         visible={modalSobreVisivel}
         transparent
