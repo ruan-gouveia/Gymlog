@@ -42,12 +42,11 @@ export default function LayoutRaiz() {
   const tema = useThemeStore((state) => state.tema);
 
   useEffect(() => {
-    if (tema === 'system') {
-      setColorScheme('system');
-    } else {
-      setColorScheme(tema);
+    const alvo = tema === 'system' ? 'system' : tema;
+    if (alvo === 'system' || colorScheme !== alvo) {
+      setColorScheme(alvo);
     }
-  }, [tema, setColorScheme]);
+  }, [tema, colorScheme, setColorScheme]);
 
   const ehEscuro = tema === 'system' ? colorScheme === 'dark' : tema === 'dark';
   const coresAtuais = ehEscuro ? coresEscuras : coresClaras;
@@ -60,7 +59,7 @@ export default function LayoutRaiz() {
   useEffect(() => {
     const limpar = agendarForcarBarraNavegacaoEscura();
     return limpar;
-  }, [ehEscuro, tema]);
+  }, [ehEscuro]);
 
   const temaNavegacao: Theme = useMemo(
     () => ({
@@ -113,7 +112,7 @@ export default function LayoutRaiz() {
           }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" /> 
+          <Stack.Screen name="(tabs)" />
           <Stack.Screen name="treino-ativo/[id]" options={{ gestureEnabled: false }} />
         </Stack>
         <Toast />
