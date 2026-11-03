@@ -59,10 +59,8 @@ function GraficoBarrasVolume({
 }) {
   const volumes = pontos.map((p) => p.volume);
   const maxVolume = Math.max(...volumes, 1000);
-  // Arredonda o teto para múltiplos amigáveis de 2000 (ex: 4.000, 6.000, 8.000, 10.000...)
   const teto = Math.max(Math.ceil(maxVolume / 2000) * 2000, 2000);
 
-  // 5 marcas no eixo Y: do teto até 0 em números normais em kg
   const marcasEixoY = [
     teto,
     Math.round(teto * 0.75),
@@ -77,7 +75,6 @@ function GraficoBarrasVolume({
   return (
     <View className="w-full pt-2 pb-1">
       <View className="flex-row items-stretch" style={{ height: alturaAreaGrafico }}>
-        {/* Coluna do Eixo Y - afastada da lateral esquerda do Card, com números normais em kg */}
         <View className="w-16 justify-between items-end pr-3 py-1">
           {marcasEixoY.map((marca, idx) => (
             <Text key={idx} className="text-[11px] font-medium text-slate-400 dark:text-[#8E92B8]">
@@ -86,9 +83,7 @@ function GraficoBarrasVolume({
           ))}
         </View>
 
-        {/* Área das Barras com Linhas de Grade Tracejadas e Centralização */}
         <View className="flex-1 relative justify-between">
-          {/* Linhas de Grade de Fundo - visibilidade e contraste aprimorados para acessibilidade */}
           <View className="absolute inset-0 justify-between py-2 pointer-events-none">
             {marcasEixoY.map((_, idx) => (
               <View
@@ -99,7 +94,6 @@ function GraficoBarrasVolume({
             ))}
           </View>
 
-          {/* Barras do período com animação de subida e destaque visual sem popup preto */}
           <View className="flex-1 flex-row items-end justify-around px-2 z-10">
             {pontos.map((ponto, idx) => {
               const estaSelecionada = barraSelecionada === idx;
@@ -111,7 +105,7 @@ function GraficoBarrasVolume({
                     Math.round((ponto.volume / teto) * (alturaAreaGrafico - 20)),
                     6
                   )
-                : 4; // barra mínima para indicar dias/períodos zerados
+                : 4;
 
               const alturaAnimada = animProgresso.interpolate({
                 inputRange: [0, 1],
@@ -148,7 +142,6 @@ function GraficoBarrasVolume({
         </View>
       </View>
 
-      {/* Rótulos do Eixo X (dias, semanas ou meses) perfeitamente alinhados abaixo de cada barra */}
       <View className="flex-row items-center justify-around pl-16 pr-2 pt-2">
         {pontos.map((ponto, idx) => {
           const estaSelecionada = barraSelecionada === idx;
@@ -185,11 +178,9 @@ export default function Estatisticas() {
   const [periodoVolume, setPeriodoVolume] = useState<PeriodoFiltro>('semanas');
   const [carregando, setCarregando] = useState(true);
 
-  // Animação de Fade In e Slide Up para o contêiner dos cards
   const [animOpacidade] = useState(() => new Animated.Value(0));
   const [animTranslacaoY] = useState(() => new Animated.Value(20));
 
-  // Animação de crescimento fluido das barras (Volume e Grupos Musculares)
   const [animProgresso] = useState(() => new Animated.Value(0));
 
   const dispararAnimacao = useCallback(() => {
@@ -306,7 +297,6 @@ export default function Estatisticas() {
           </View>
         ) : (
           <>
-            {/* Grid 2x2 com cards de métricas */}
             <View className="gap-3">
               <View className="flex-row gap-3">
                 <CardMetrica
@@ -334,7 +324,6 @@ export default function Estatisticas() {
               </View>
             </View>
 
-            {/* Card com Gráfico: Volume de treino */}
             <View className="mt-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
                 <View>
@@ -357,7 +346,6 @@ export default function Estatisticas() {
                 </Pressable>
               </View>
 
-              {/* Seletor de Períodos: 7 Dias | 4 Semanas | 6 Meses */}
               <View className="mb-3">
                 <SeletorPeriodo periodo={periodoVolume} onMudar={mudarPeriodo} />
               </View>
@@ -377,7 +365,6 @@ export default function Estatisticas() {
                     onSelecionarBarra={setBarraSelecionada}
                   />
 
-                  {/* Card de Insights do Período/Barra Selecionada */}
                   {barraSelecionada !== null && pontosVolume[barraSelecionada] && (() => {
                     const ponto = pontosVolume[barraSelecionada];
                     const somaVolume = pontosVolume.reduce((acc, p) => acc + p.volume, 0);
@@ -398,7 +385,6 @@ export default function Estatisticas() {
 
                     return (
                       <View className="mt-3.5 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-indigo-50/60 dark:bg-[#14152D] p-3.5">
-                        {/* Cabeçalho do Card de Insight */}
                         <View className="flex-row items-center justify-between pb-2 border-b border-indigo-100/60 dark:border-[#282B54]/60">
                           <View className="flex-row items-center gap-2">
                             <View className="h-6 w-6 items-center justify-center rounded-lg bg-[#5c7cfa]/20">
@@ -419,7 +405,6 @@ export default function Estatisticas() {
                           </Pressable>
                         </View>
 
-                        {/* Conteúdo do Insight */}
                         <View className="mt-2.5">
                           {ponto.volume === 0 ? (
                             <View className="py-2 items-center">
@@ -438,7 +423,6 @@ export default function Estatisticas() {
                                 </Text>
                               </View>
 
-                              {/* Linha de detalhes adicionais (Grupo, Duração e Séries) */}
                               {(ponto.duracao > 0 || ponto.grupoMuscular || ponto.totalSeries > 0) && (
                                 <View className="mt-1.5 flex-row items-center gap-3">
                                   {ponto.grupoMuscular ? (
@@ -462,7 +446,6 @@ export default function Estatisticas() {
                                 </View>
                               )}
 
-                              {/* Insight Comparativo com a média do período */}
                               <View className="mt-2.5 flex-row items-center gap-1.5 rounded-xl bg-white/80 dark:bg-[#1C1E3A] px-2.5 py-1.5 border border-indigo-100/50 dark:border-[#282B54]">
                                 <Feather
                                   name={ehAcima ? 'trending-up' : ehAbaixo ? 'trending-down' : 'minus'}
@@ -491,7 +474,6 @@ export default function Estatisticas() {
               )}
             </View>
 
-            {/* Grupos musculares */}
             <View className="mt-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="text-base font-bold text-slate-900 dark:text-white">Grupos musculares</Text>

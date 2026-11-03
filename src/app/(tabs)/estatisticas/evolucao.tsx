@@ -75,7 +75,6 @@ export default function Evolucao() {
   const [exercicioManual, setExercicioManual] = useState<string | null>(null);
   const [pontoSelecionado, setPontoSelecionado] = useState<PontoSelecionado>(null);
 
-  // Animação de Fade In, Slide Up e Crescimento da linha a partir da base
   const [animOpacidade] = useState(() => new Animated.Value(0));
   const [animTranslacaoY] = useState(() => new Animated.Value(15));
   const [animScaleY] = useState(() => new Animated.Value(0));
@@ -128,7 +127,6 @@ export default function Evolucao() {
     return exercicios[0]?.nome ?? '';
   }, [exercicioManual, exercicios]);
 
-  // Ponto ativo derivado do exercício, métrica e período atuais
   const pontoAtivo =
     pontoSelecionado?.exercicio === exercicioSelecionado &&
     pontoSelecionado?.metrica === metrica &&
@@ -147,7 +145,6 @@ export default function Evolucao() {
     }
   }, [exercicioSelecionado, periodo, versao]);
 
-  // Dispara animação sempre que mudar o exercício, métrica ou período selecionado
   useEffect(() => {
     dispararAnimacao();
   }, [metrica, periodo, exercicioSelecionado, dispararAnimacao]);
@@ -166,7 +163,6 @@ export default function Evolucao() {
     });
   }, [pontos, metrica]);
 
-  // Variação entre o primeiro e o último registro
   const deltaFormatado = useMemo(() => {
     if (valoresMetrica.length < 2) return null;
     const inicial = valoresMetrica[0];
@@ -194,9 +190,9 @@ export default function Evolucao() {
   const unidadeSufixoEixoY = useMemo(() => {
     switch (metrica) {
       case 'Volume':
-        return ''; // Abreviado com 'k' via formatYLabel
+        return '';
       case 'Repetições':
-        return ''; // Número limpo para não colidir
+        return '';
       case 'Carga':
       default:
         return ' kg';
@@ -228,10 +224,8 @@ export default function Evolucao() {
   };
 
   const larguraTela = Dimensions.get('window').width;
-  // ScrollView px-5 (40px) + Card p-4 (32px) => espaço interior útil do card
   const larguraGrafico = Math.max(larguraTela - 72, 280);
 
-  // Prepara dados para o LineChart com os valores do período
   const dadosGrafico = useMemo(() => {
     if (pontos.length === 0) return null;
 
@@ -255,7 +249,6 @@ export default function Evolucao() {
         contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Cabeçalho */}
         <View className="mb-3 flex-row items-center">
           <Pressable
             accessibilityRole="button"
@@ -269,7 +262,6 @@ export default function Evolucao() {
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Evolução</Text>
         </View>
 
-        {/* Pílulas de Seleção de Métrica */}
         <View className="mb-3 flex-row gap-2">
           {(['Volume', 'Carga', 'Repetições'] as MetricaTipo[]).map((m) => {
             const ativo = metrica === m;
@@ -297,12 +289,10 @@ export default function Evolucao() {
           })}
         </View>
 
-        {/* Seletor de Períodos: 7 Dias | 4 Semanas | 6 Meses */}
         <View className="mb-4">
           <SeletorPeriodo periodo={periodo} onMudar={setPeriodo} />
         </View>
 
-        {/* Seletor de Exercício (quando há exercícios) */}
         {exercicios.length > 0 && (
           <View className="mb-4">
             <Text className="mb-2 text-xs font-medium text-slate-400 dark:text-[#8E92B8]">Selecione o exercício</Text>
@@ -334,7 +324,6 @@ export default function Evolucao() {
           </View>
         )}
 
-        {/* Estado Vazio Geral */}
         {exercicios.length === 0 ? (
           <View className="mt-16 items-center justify-center px-4">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-indigo-50">
@@ -357,7 +346,6 @@ export default function Evolucao() {
           </View>
         ) : (
           <>
-            {/* Card com o Gráfico */}
             <View className="mb-5 rounded-3xl border border-slate-200 dark:border-[#23264D] bg-white dark:bg-[#1C1E3A] p-4 shadow-sm shadow-slate-100 dark:shadow-none">
               <View className="mb-3 flex-row items-center justify-between">
                 <View className="flex-1 pr-2">
@@ -392,7 +380,6 @@ export default function Evolucao() {
                   >
                     {pontoAtivo && (() => {
                       const LARGURA_TOOLTIP = 110;
-                      // Se o ponto estiver muito perto do topo do gráfico, inverte para surgir imediatamente abaixo do nó
                       const surgeAbaixo = pontoAtivo.y < 44;
                       const leftPos = Math.max(
                         6,
@@ -412,7 +399,6 @@ export default function Evolucao() {
                             pointerEvents: 'none',
                           }}
                         >
-                          {/* Triângulo / Setinha apontando para CIMA quando surge abaixo do nó */}
                           {surgeAbaixo && (
                             <View className="h-2 w-2 rotate-45 bg-slate-900 -mb-1 z-10" />
                           )}
@@ -423,7 +409,6 @@ export default function Evolucao() {
                             </Text>
                           </View>
 
-                          {/* Triângulo / Setinha apontando para BAIXO quando surge acima do nó */}
                           {!surgeAbaixo && (
                             <View className="h-2 w-2 rotate-45 bg-slate-900 -mt-1 z-10" />
                           )}
@@ -741,7 +726,6 @@ export default function Evolucao() {
                     )}
                   </Animated.View>
 
-                  {/* Card de Insights Analíticos com Cálculo de Delta */}
                   {pontoAtivo && (() => {
                     const index = pontoAtivo.index;
                     const ponto = pontos[index];
@@ -799,7 +783,6 @@ export default function Evolucao() {
 
                     return (
                       <View className="mt-4 rounded-3xl border border-indigo-100 dark:border-[#282B54] bg-indigo-50/60 dark:bg-[#14152D] p-4">
-                        {/* Cabeçalho do Card */}
                         <View className="flex-row items-center justify-between pb-2.5 border-b border-indigo-100/70 dark:border-[#282B54]/70">
                           <View className="flex-row items-center gap-2">
                             <View className="h-7 w-7 items-center justify-center rounded-xl bg-[#5c7cfa]/20">
@@ -823,7 +806,6 @@ export default function Evolucao() {
                           </Pressable>
                         </View>
 
-                        {/* Valor principal da métrica */}
                         <View className="mt-3 flex-row items-baseline justify-between">
                           <Text className="text-sm font-semibold text-slate-700 dark:text-slate-300">{subtituloMetrica}</Text>
                           <Text className="text-xl font-bold text-[#5c7cfa]">
@@ -831,7 +813,6 @@ export default function Evolucao() {
                           </Text>
                         </View>
 
-                        {/* Detalhes complementares da sessão */}
                         <View className="mt-2 flex-row flex-wrap items-center gap-2">
                           <View className="flex-row items-center gap-1 rounded-lg bg-white dark:bg-[#1C1E3A] px-2 py-1 border border-indigo-100/60 dark:border-[#282B54]">
                             <Feather name="disc" size={11} color="#64748b" />
@@ -853,7 +834,6 @@ export default function Evolucao() {
                           </View>
                         </View>
 
-                        {/* Insight Analítico (Delta com ponto anterior) */}
                         <View
                           className={`mt-3 flex-row items-center gap-2 rounded-2xl px-3 py-2.5 border ${
                             ehAumento
@@ -889,7 +869,6 @@ export default function Evolucao() {
                           </Text>
                         </View>
 
-                        {/* Comparação com a média geral do período */}
                         {mediaPeriodo > 0 && (
                           <View className="mt-2 flex-row items-center gap-1.5 px-1">
                             <Feather
@@ -915,7 +894,6 @@ export default function Evolucao() {
               )}
             </View>
 
-            {/* Lista com Histórico Semanal/Por Treino */}
             <View className="gap-2.5">
               <Text className="text-sm font-bold text-slate-900">Histórico de registros</Text>
 

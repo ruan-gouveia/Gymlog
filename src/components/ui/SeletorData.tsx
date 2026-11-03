@@ -11,12 +11,9 @@ import { mascararData } from '@/utils/mascaras';
 
 type SeletorDataProps = {
   label: string;
-  /** "DD/MM/AAAA" ou "" quando não há data escolhida. */
   valor: string;
   onChange: (valor: string) => void;
-  /** Data mínima aceita ("DD/MM/AAAA"). */
   minimo?: string;
-  /** Data máxima aceita ("DD/MM/AAAA"). */
   maximo?: string;
 };
 

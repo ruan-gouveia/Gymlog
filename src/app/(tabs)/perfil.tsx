@@ -265,7 +265,8 @@ export default function Perfil() {
         text: 'Sair',
         style: 'destructive',
         onPress: () => {
-          router.replace('/(auth)/login');
+          showToast('Sessão encerrada.');
+          router.replace('/(tabs)');
         },
       },
     ]);
@@ -519,7 +520,7 @@ export default function Perfil() {
                 GymLog 2.0
               </Text>
               <Text className="text-[12px] font-semibold text-[#5C7CFA] dark:text-[#7C93FF] mt-0.5">
-                Versão {versaoApp} · Build SDK 57
+                Versão {versaoApp} · Build SDK 58
               </Text>
             </View>
 

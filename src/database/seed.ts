@@ -41,7 +41,7 @@ function construirExerciciosDoGrupo(
   nivelVolume: number,
   variante: number
 ): { nomeTreino: string; exercicios: ExercicioSeed[] } {
-  const oscilacaoCarga = (variante % 3) - 1; // -1, 0, +1
+  const oscilacaoCarga = (variante % 3) - 1;
   const oscilacaoRep = variante % 2 === 0 ? 0 : 1;
 
   if (grupo === 'Peito') {
@@ -164,7 +164,6 @@ function construirExerciciosDoGrupo(
     };
   }
 
-  // Braços
   const rosca = Math.max(8, Math.round(11 * fatorCarga) + oscilacaoCarga);
   const triceps = Math.max(14, Math.round(20 * fatorCarga) + oscilacaoCarga * 2);
   const martelo = Math.max(8, Math.round(12 * fatorCarga) + oscilacaoCarga);
@@ -218,16 +217,13 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
 
       try {
         db.runSync("DELETE FROM sqlite_sequence WHERE name IN ('treinos', 'exercicios');");
-      } catch {
-        // Ignora caso sqlite_sequence ainda não exista
-      }
+      } catch {}
 
       const hoje = new Date();
       const domingoAtual = adicionarDias(hoje, -hoje.getDay());
 
       const treinosParaInserir: TreinoSeed[] = [];
 
-      // Rotação variada de grupos musculares ao longo das 26 semanas (6 meses)
       const gradesSemanais: { diaSemana: number; grupo: string; horario: string }[][] = [
         [
           { diaSemana: 1, grupo: 'Peito', horario: '18:30' },
@@ -263,13 +259,11 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         ],
       ];
 
-      // 25 semanas anteriores completas (Semanas 1 a 25)
       for (let indiceSemana = 25; indiceSemana >= 1; indiceSemana--) {
-        const numeroSemana = 26 - indiceSemana; // 1 .. 25
+        const numeroSemana = 26 - indiceSemana;
         const domingoDaSemana = adicionarDias(domingoAtual, -indiceSemana * 7);
 
-        // Periodização realista ao longo de 6 meses com ondas de carga, volume e repetições
-        const progressoLinear = (numeroSemana - 1) / 25; // 0.0 -> 0.96
+        const progressoLinear = (numeroSemana - 1) / 25;
         const ehSemanaDeload = numeroSemana === 8 || numeroSemana === 16 || numeroSemana === 24;
         const ehSemanaChoque = numeroSemana === 7 || numeroSemana === 12 || numeroSemana === 20 || numeroSemana === 23;
 
@@ -290,8 +284,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
           ? 5
           : 3 + (numeroSemana % 3);
 
-        // Na última semana completa (indiceSemana === 1), garante 6 dias de treino variados (Seg a Sáb)
-        // para que o gráfico de 7 Dias em Estatísticas fique rico e bem distribuído
         const cronograma =
           indiceSemana === 1
             ? [
@@ -350,7 +342,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         });
       }
 
-      // Se a semana atual já avançou além de domingo, adiciona treinos concluídos nos dias anteriores da semana atual
       const diaSemanaHoje = hoje.getDay();
       for (let d = 1; d < diaSemanaHoje; d++) {
         if (d === 1 || d === 2 || d === 4 || d === 5) {
@@ -377,7 +368,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         }
       }
 
-      // 1. Treino concluído hoje cedo (para contabilizar na meta da semana atual e histórico recente)
       const { exercicios: exsHojeConcluido } = construirExerciciosDoGrupo('Peito', 1.54, 8, 5, 27);
       treinosParaInserir.push({
         nome: 'Treino de Peito - Força e PR',
@@ -391,7 +381,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         exercicios: exsHojeConcluido,
       });
 
-      // 2. Treino Pendente (ontem às 18:00 com status 'agendado' -> exibido na seção Pendentes da tela inicial)
       const ontem = adicionarDias(hoje, -1);
       const { exercicios: exsPendente } = construirExerciciosDoGrupo('Ombros', 1.48, 10, 4, 25);
       treinosParaInserir.push({
@@ -406,7 +395,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         exercicios: exsPendente.map((e) => ({ ...e, concluida: 0 })),
       });
 
-      // 3. Treino Agendado para Hoje à noite (23:30 -> exibido na seção Hoje com botão "Iniciar treino")
       const { exercicios: exsHojeAgendado } = construirExerciciosDoGrupo('Braços', 1.5, 10, 4, 26);
       treinosParaInserir.push({
         nome: 'Treino de Bíceps e Tríceps',
@@ -420,7 +408,6 @@ export function popularBancoComDadosDeTeste(forcarReset = false): void {
         exercicios: exsHojeAgendado.map((e) => ({ ...e, concluida: 0 })),
       });
 
-      // 4. Próximos treinos agendados na semana (para preencher "Próximo treino" e a agenda horizontal)
       const amanha = adicionarDias(hoje, 1);
       const { exercicios: exsAmanha } = construirExerciciosDoGrupo('Costas', 1.52, 9, 4, 27);
       treinosParaInserir.push({

@@ -41,11 +41,6 @@ type ModulosNotificacoesLocais = {
 let modulosCache: ModulosNotificacoesLocais | null = null;
 let carregamentoTentado = false;
 
-/**
- * Carrega apenas os submódulos de notificações locais do `expo-notifications`,
- * evitando o barrel raiz (`expo-notifications/build/index.js`) que importa
- * `TopicSubscriptionModule` (push notifications/FCM removido do Expo Go Android no SDK 53+).
- */
 function obterModulosNotificacoesLocais(): ModulosNotificacoesLocais | null {
   if (Platform.OS === 'web') return null;
   if (modulosCache) return modulosCache;

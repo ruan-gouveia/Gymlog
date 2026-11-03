@@ -16,9 +16,7 @@ export type CampoSerie = 'repeticoes' | 'carga';
 
 export type DescansoAtivo = {
   totalMs: number;
-  /** Timestamp do fim da contagem (quando rodando). */
   fimEm: number | null;
-  /** Tempo restante congelado (quando pausado). */
   restanteMs: number | null;
   proximo: string | null;
 };
@@ -94,7 +92,6 @@ interface LiveWorkoutStore {
     campo: CampoSerie,
     direcao: 1 | -1
   ) => void;
-  /** Alterna a série e retorna o novo estado (true = concluída). */
   alternarSerie: (exercicioIdx: number, serieIdx: number) => boolean;
   iniciarDescanso: (segundos: number, proximo: string | null) => void;
   ajustarDescanso: (deltaSegundos: number) => void;

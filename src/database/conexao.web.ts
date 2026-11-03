@@ -68,9 +68,7 @@ function persistirEstado(): void {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
-  } catch {
-    // Ignora falha de quota no localStorage
-  }
+  } catch {}
 }
 
 function chaveDataIso(dataBr: string): string {
@@ -820,9 +818,7 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
 }
 
 const dbWeb = {
-  execSync(_source: string): void {
-    // No-op na Web (schema gerenciado em memória + localStorage)
-  },
+  execSync(_source: string): void {},
   runSync(source: string, ...params: unknown[]): SQLiteRunResult {
     return executarRunSync(source, ...params);
   },

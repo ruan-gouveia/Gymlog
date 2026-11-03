@@ -1,12 +1,13 @@
 import { ActivityIndicator, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends Omit<TouchableOpacityProps, 'onPress'> {
   title: string;
   variant?: 'primary' | 'outline' | 'dashed';
   isLoading?: boolean;
+  onPress?: ((event?: any) => unknown) | TouchableOpacityProps['onPress'];
 }
 
-export function Button({ title, variant = 'primary', isLoading, ...rest }: ButtonProps) {
+export function Button({ title, variant = 'primary', isLoading, onPress, ...rest }: ButtonProps) {
   let bgClass = 'bg-[#5c7cfa]';
   let textClass = 'text-white';
   let borderClass = '';
@@ -28,6 +29,7 @@ export function Button({ title, variant = 'primary', isLoading, ...rest }: Butto
       }`}
       disabled={isLoading || rest.disabled}
       activeOpacity={0.8}
+      onPress={onPress ? (e) => void onPress(e) : undefined}
       {...rest}
     >
       {isLoading ? (
@@ -38,8 +40,3 @@ export function Button({ title, variant = 'primary', isLoading, ...rest }: Butto
     </TouchableOpacity>
   );
 }
-
-
-
-
-

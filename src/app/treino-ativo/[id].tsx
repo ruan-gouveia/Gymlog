@@ -158,7 +158,6 @@ export default function TreinoAtivo() {
     const inicio = useLiveWorkoutStore.getState().tempoInicio ?? Date.now();
     const minutos = Math.max(1, Math.round((Date.now() - inicio) / 60000));
 
-    // Só as séries marcadas vão para o histórico, renumeradas por exercício.
     const executados: ExercicioParaSalvar[] = exercicios.flatMap((ex) =>
       ex.series
         .filter((s) => s.concluida)

@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { Feather } from '@expo/vector-icons';
-import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRouter } from 'expo-router';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { type ComponentProps, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,6 @@ const ITENS_BARRA: ItemBarra[] = [
   { tipo: 'aba', rota: 'perfil', icone: 'user', rotulo: 'Perfil' },
 ];
 
-// Cores fixas do tema escuro da Tab Bar (sempre escura conforme o protótipo V2)
 const CORES_TAB_BAR = {
   fundo: '#12132A',
   borda: '#1F2244',
@@ -33,7 +32,7 @@ const CORES_TAB_BAR = {
 
 const TAMANHO_BOTAO_CENTRAL = 58;
 
-export function BarraAbas({ state, descriptors, navigation }: BottomTabBarProps) {
+export function BarraAbas({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const rotaAtiva = state.routes[state.index]?.name;
@@ -44,25 +43,28 @@ export function BarraAbas({ state, descriptors, navigation }: BottomTabBarProps)
   }, [rotaAtiva]);
 
   function navegarPara(item: ItemBarra) {
-    if (item.tipo === 'acao') {
-      router.push('/novo-treino');
-      return;
-    }
-
     const rota = state.routes.find((r) => r.name === item.rota);
     if (!rota) {
-      router.push(`/(tabs)/${item.rota}` as never);
+      router.push((item.rota === 'index' ? '/(tabs)' : `/(tabs)/${item.rota}`) as never);
       return;
     }
 
-    const evento = navigation.emit({
+    const evento = emitter.emit({
       type: 'tabPress',
       target: rota.key,
       canPreventDefault: true,
     });
 
-    if (rotaAtiva !== item.rota && !evento.defaultPrevented) {
-      navigation.navigate(rota.name, rota.params);
+    if (evento.defaultPrevented) {
+      return;
+    }
+
+    if (rotaAtiva !== item.rota) {
+      navigateToTab(rota.key);
+    } else if (item.rota === 'historico') {
+      router.replace('/(tabs)/historico');
+    } else if (item.rota === 'estatisticas') {
+      router.replace('/(tabs)/estatisticas');
     }
   }
 

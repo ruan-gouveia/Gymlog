@@ -1,5 +1,5 @@
+import { requireNativeModule } from 'expo';
 import { NavigationBar } from 'expo-navigation-bar';
-import { requireNativeModule } from 'expo-modules-core';
 import * as SystemUI from 'expo-system-ui';
 import { Appearance, Platform } from 'react-native';
 

@@ -217,9 +217,7 @@ export function obterSequenciaSemanasNaMeta(metaSemanalParam?: number): number {
       if (resumo.semanasSeguidas > 0) {
         return resumo.semanasSeguidas;
       }
-    } catch {
-      // Continua para o cálculo direto caso ocorra erro
-    }
+    } catch {}
   }
 
   const treinosConcluidos = db.getAllSync<{ id: number; data: string }>(

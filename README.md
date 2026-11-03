@@ -49,7 +49,7 @@ Manter a constância nos treinos e aplicar a progressão de carga fica muito mai
 
 | Categoria | Tecnologia | Papel no Projeto |
 | :--- | :--- | :--- |
-| **Framework Mobile** | [React Native](https://reactnative.dev/) (`0.83`) + [Expo SDK 55](https://expo.dev/) | Base multiplataforma (Android, iOS e Web) |
+| **Framework Mobile** | [React Native](https://reactnative.dev/) (`0.88`) + [Expo SDK 58](https://expo.dev/) | Base multiplataforma (Android, iOS e Web) |
 | **Linguagem** | [TypeScript](https://www.typescriptlang.org/) | Tipagem estática em todas as camadas de banco, rotas e UI |
 | **Navegação** | [Expo Router](https://docs.expo.dev/router/introduction/) | Roteamento *file-based* com abas (`Tabs`) e pilhas (`Stack`) |
 | **Banco de Dados Local** | [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/) (`expo-sqlite`) | Persistência relacional de treinos, exercícios e metas (com transações e migrations) |

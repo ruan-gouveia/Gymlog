@@ -159,7 +159,7 @@ export default function Historico() {
           />
         )}
         ListEmptyComponent={
-          erro ? null : (
+          erro ? undefined : (
             <Text className="mt-10 text-center text-sm text-slate-400 dark:text-[#8E92B8]">
               {treinos.length === 0
                 ? 'Nenhum treino registrado ainda. Toque no + para começar.'

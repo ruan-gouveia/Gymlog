@@ -24,23 +24,23 @@ export default function EditarTreino() {
   const tema = useThemeStore((state) => state.tema);
   const ehEscuro = tema === 'dark';
 
- const carregamento = useMemo<Carregamento>(() => {
-  try {
-    const treino = Number.isInteger(treinoId) ? buscarTreinoPorId(treinoId) : null;
-    if (!treino) return { erro: 'Treino não encontrado.' };
-    return { valores: detalheParaFormulario(treino) };
-  } catch (error) {
-    console.error('[Edição] Erro ao carregar treino:', error);
-    return { erro: 'Não foi possível carregar o treino.' };
-  }
-}, [treinoId]);
+  const carregamento = useMemo<Carregamento>(() => {
+    try {
+      const treino = Number.isInteger(treinoId) ? buscarTreinoPorId(treinoId) : null;
+      if (!treino) return { erro: 'Treino não encontrado.' };
+      return { valores: detalheParaFormulario(treino) };
+    } catch (error) {
+      console.error('[Edição] Erro ao carregar treino:', error);
+      return { erro: 'Não foi possível carregar o treino.' };
+    }
+  }, [treinoId]);
 
   function salvar(valores: TreinoEdicaoValues) {
     try {
       const { treino, exercicios } = formularioParaPayload(valores);
       atualizarTreinoComExercicios(treinoId, treino, exercicios);
       showToast('Treino atualizado com sucesso!');
-      router.back(); // a tela de Detalhes recarrega via useFocusEffect
+      router.back();
     } catch (error) {
       console.error('[Edição] Erro ao atualizar treino:', error);
       showToast('Erro ao salvar as alterações. Tente novamente.', 'erro');

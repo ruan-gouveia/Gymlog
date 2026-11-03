@@ -30,7 +30,6 @@ export function obterCoresTema(ehEscuro: boolean) {
   return ehEscuro ? coresEscuras : coresClaras;
 }
 
-// Mantido para compatibilidade imediata com estilos legados
 export const cores = coresClaras;
 
 export const espacamento = {

@@ -98,9 +98,7 @@ function obterDataReferencia(): Date {
 
 function gerarIntervalos(periodo: PeriodoFiltro, dataRef: Date): IntervaloPeriodo[] {
   if (periodo === 'dias') {
-    // 7 dias da semana: Domingo a Sábado (Domingo como primeiro dia da semana em todos os gráficos).
-    // Se a semana calendário atual acabou de começar (ex.: Domingo, Segunda ou Terça), exibe a última semana completa (Dom a Sáb).
-    const diffParaDomingo = dataRef.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    const diffParaDomingo = dataRef.getDay();
     const recuoSemana = diffParaDomingo <= 2 ? 7 : 0;
     const domingoReferencia = new Date(
       dataRef.getFullYear(),
@@ -130,8 +128,7 @@ function gerarIntervalos(periodo: PeriodoFiltro, dataRef: Date): IntervaloPeriod
   }
 
   if (periodo === 'semanas') {
-    // 4 semanas de calendário: Domingo a Sábado (Regra de negócio: Domingo é o primeiro dia e Sábado o último)
-    const diffParaDomingo = dataRef.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    const diffParaDomingo = dataRef.getDay();
     const recuoSemana = diffParaDomingo <= 1 ? 7 : 0;
     const domingoSemanaBase = new Date(
       dataRef.getFullYear(),
@@ -165,7 +162,6 @@ function gerarIntervalos(periodo: PeriodoFiltro, dataRef: Date): IntervaloPeriod
     return semanas;
   }
 
-  // 'meses' (6 meses)
   const meses: IntervaloPeriodo[] = [];
   for (let i = 5; i >= 0; i--) {
     const ano = dataRef.getFullYear();

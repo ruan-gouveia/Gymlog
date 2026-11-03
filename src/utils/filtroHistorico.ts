@@ -11,9 +11,7 @@ export const OPCOES_PERIODO = [
 export type PeriodoHistorico = (typeof OPCOES_PERIODO)[number];
 
 export type LimitesPeriodo = {
-  /** Chave AAAAMMDD inicial (inclusive). null = sem limite. */
   de: number | null;
-  /** Chave AAAAMMDD final (inclusive). null = sem limite. */
   ate: number | null;
 };
 

@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { NavigationBar } from 'expo-navigation-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { LogBox, View } from 'react-native';
 
 import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
@@ -17,22 +17,27 @@ import {
 } from '@/utils/sistemaNavegacao';
 import '../global.css';
 
-if (Platform.OS === 'web') {
-  const warnOriginal = console.warn;
-  console.warn = (...args: unknown[]) => {
-    const primeiraMsg = typeof args[0] === 'string' ? args[0] : '';
-    if (
-      primeiraMsg.includes('"shadow*" style props are deprecated') ||
-      primeiraMsg.includes('props.pointerEvents is deprecated') ||
-      primeiraMsg.includes('Cannot record touch end without a touch start') ||
-      primeiraMsg.includes('TouchableMixin is deprecated') ||
-      primeiraMsg.includes('`useNativeDriver` is not supported')
-    ) {
-      return;
-    }
-    warnOriginal(...args);
-  };
-}
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
+LogBox.ignoreLogs(['ImageBackground is deprecated']);
+
+const warnOriginal = console.warn;
+console.warn = (...args: unknown[]) => {
+  const primeiraMsg = typeof args[0] === 'string' ? args[0] : '';
+  if (
+    primeiraMsg.includes('ImageBackground is deprecated') ||
+    primeiraMsg.includes('"shadow*" style props are deprecated') ||
+    primeiraMsg.includes('props.pointerEvents is deprecated') ||
+    primeiraMsg.includes('Cannot record touch end without a touch start') ||
+    primeiraMsg.includes('TouchableMixin is deprecated') ||
+    primeiraMsg.includes('`useNativeDriver` is not supported')
+  ) {
+    return;
+  }
+  warnOriginal(...args);
+};
 
 SplashScreen.preventAutoHideAsync();
 
@@ -110,8 +115,6 @@ export default function LayoutRaiz() {
             headerShown: false,
             contentStyle: { backgroundColor: coresAtuais.fundo },
           }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="treino-ativo/[id]" options={{ gestureEnabled: false }} />
         </Stack>
