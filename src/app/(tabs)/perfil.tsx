@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ModalLembretes } from '@/components/perfil/ModalLembretes';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   ajustarStatusTemporal,
   db,
@@ -122,9 +123,16 @@ function SwitchFielPrototipo({
 
 export default function Perfil() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
   const tema = useThemeStore((state) => state.tema);
   const setTema = useThemeStore((state) => state.setTema);
   const ehEscuro = tema === 'dark';
+
+  const nomeExibicao =
+    (typeof user?.user_metadata?.nome === 'string' && user.user_metadata.nome.trim()) ||
+    user?.email?.split('@')[0] ||
+    'Usuário';
+  const emailExibicao = user?.email ?? 'usuario@gmail.com';
 
   useNotificacoesTreino(true);
 
@@ -264,9 +272,14 @@ export default function Perfil() {
       {
         text: 'Sair',
         style: 'destructive',
-        onPress: () => {
-          showToast('Sessão encerrada.');
-          router.replace('/(tabs)');
+        onPress: async () => {
+          try {
+            await signOut();
+            showToast('Sessão encerrada.');
+            router.replace('/(auth)/login');
+          } catch {
+            showToast('Não foi possível encerrar a sessão.', 'erro');
+          }
         },
       },
     ]);
@@ -284,10 +297,10 @@ export default function Perfil() {
             <Feather name="user" size={36} color="#FFFFFF" />
           </View>
           <Text className="text-[22px] font-bold text-slate-900 dark:text-white">
-            Usuário
+            {nomeExibicao}
           </Text>
           <Text className="text-[13px] font-medium text-slate-400 dark:text-[#8E92B8] mt-0.5">
-            usuario@gmail.com
+            {emailExibicao}
           </Text>
         </View>
 

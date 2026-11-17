@@ -1,13 +1,22 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  useRouter,
+  useSegments,
+  type Theme,
+} from 'expo-router';
+import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { NavigationBar } from 'expo-navigation-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { LogBox, View } from 'react-native';
 
 import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { db, initDatabase } from '@/database';
 import { popularBancoComDadosDeTeste } from '@/database/seed';
 import { useThemeStore } from '@/stores/useThemeStore';
@@ -39,10 +48,12 @@ console.warn = (...args: unknown[]) => {
   warnOriginal(...args);
 };
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function LayoutRaiz() {
-  const [bancoPronto, setBancoPronto] = useState(false);
+function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
+  const { session, carregando: carregandoAuth } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
   const { colorScheme, setColorScheme } = useColorScheme();
   const tema = useThemeStore((state) => state.tema);
 
@@ -82,26 +93,23 @@ export default function LayoutRaiz() {
     [ehEscuro, coresAtuais]
   );
 
+  const inicializacaoConcluida = bancoPronto && !carregandoAuth;
+
   useEffect(() => {
-    async function preparar() {
-      try {
-        agendarForcarBarraNavegacaoEscura();
-        initDatabase(db);
-        if (__DEV__) {
-          popularBancoComDadosDeTeste();
-        }
-        setBancoPronto(true);
-      } catch (error) {
-        console.error('[App] Falha ao inicializar o banco de dados:', error);
-      } finally {
-        await SplashScreen.hideAsync();
-      }
+    if (!inicializacaoConcluida) return;
+
+    const emGrupoAuth = segments[0] === '(auth)';
+
+    if (!session && !emGrupoAuth) {
+      router.replace('/(auth)/login');
+    } else if (session && emGrupoAuth) {
+      router.replace('/(tabs)');
     }
 
-    preparar();
-  }, []);
+    void SplashScreen.hideAsync().catch(() => {});
+  }, [inicializacaoConcluida, session, segments, router]);
 
-  if (!bancoPronto) {
+  if (!inicializacaoConcluida) {
     return null;
   }
 
@@ -114,12 +122,42 @@ export default function LayoutRaiz() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: coresAtuais.fundo },
-          }}>
+          }}
+        >
+          <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="treino-ativo/[id]" options={{ gestureEnabled: false }} />
         </Stack>
         <Toast />
       </ThemeProvider>
     </View>
+  );
+}
+
+export default function LayoutRaiz() {
+  const [bancoPronto, setBancoPronto] = useState(false);
+
+  useEffect(() => {
+    async function preparar() {
+      try {
+        agendarForcarBarraNavegacaoEscura();
+        initDatabase(db);
+        if (__DEV__) {
+          popularBancoComDadosDeTeste();
+        }
+      } catch (error) {
+        console.error('[App] Falha ao inicializar o banco de dados:', error);
+      } finally {
+        setBancoPronto(true);
+      }
+    }
+
+    void preparar();
+  }, []);
+
+  return (
+    <AuthProvider>
+      <NavegacaoRaiz bancoPronto={bancoPronto} />
+    </AuthProvider>
   );
 }

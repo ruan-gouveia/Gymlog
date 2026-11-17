@@ -10,10 +10,12 @@ import { CardTreinoHoje } from '@/components/dashboard/CardTreinoHoje';
 import { CardTreinoPendente } from '@/components/dashboard/CardTreinoPendente';
 import { CardUltimoTreino } from '@/components/dashboard/CardUltimoTreino';
 import { CardsResumoInicio } from '@/components/dashboard/CardsResumoInicio';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   excluirTreino,
   formatarDataBr,
   formatarDataExtenso,
+  obterConfiguracoesUsuario,
   obterDiasAgenda,
   obterResumoSemana,
   obterTreinosDoDia,
@@ -31,6 +33,18 @@ import { showToast } from '@/stores/toastStore';
 
 export default function InicioDashboard() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  const nomeUsuario = useMemo(() => {
+    const metaNome =
+      typeof user?.user_metadata?.nome === 'string' ? user.user_metadata.nome.trim() : '';
+    if (metaNome) return metaNome;
+    try {
+      const configNome = obterConfiguracoesUsuario().nome_usuario?.trim();
+      if (configNome && configNome !== 'Usuário') return configNome;
+    } catch {}
+    return user?.email?.split('@')[0] || 'bom treino';
+  }, [user]);
 
   const dataHojeStr = useMemo(() => formatarDataBr(new Date()), []);
   const [dataSelecionada, setDataSelecionada] = useState<string>(dataHojeStr);
@@ -157,7 +171,7 @@ export default function InicioDashboard() {
               {dataExtenso}
             </Text>
             <Text className="text-[28px] font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
-              Olá, bom treino!
+              Olá, {nomeUsuario}!
             </Text>
           </View>
 
