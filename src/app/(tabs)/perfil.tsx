@@ -33,6 +33,7 @@ import {
   atualizarPreferenciasESincronizarNotificacoes,
   useNotificacoesTreino,
 } from '@/services/notificacoesService';
+import { sincronizarPerfilComNuvem } from '@/services/sincronizacaoSupabase';
 import { showToast } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 
@@ -208,6 +209,7 @@ export default function Perfil() {
     setMetaSemanal(clamped);
     try {
       salvarMetaSemanal(clamped);
+      void sincronizarPerfilComNuvem();
       const estatisticas = obterEstatisticasPerfil(clamped);
       setSequenciaSemanas(estatisticas.sequenciaSemanas);
       showToast(`Meta atualizada para ${clamped} treinos/semana!`);
@@ -231,6 +233,7 @@ export default function Perfil() {
       );
       setLembretesAtivos(resultado.ativo);
       setAntecedenciaLembrete(resultado.antecedenciaMinutos);
+      void sincronizarPerfilComNuvem();
 
       if (!resultado.ativo) {
         showToast('Lembretes desativados.');

@@ -18,7 +18,6 @@ import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { db, initDatabase } from '@/database';
-import { popularBancoComDadosDeTeste } from '@/database/seed';
 import { useThemeStore } from '@/stores/useThemeStore';
 import {
   agendarForcarBarraNavegacaoEscura,
@@ -119,6 +118,7 @@ function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
         <StatusBar style={ehEscuro ? 'light' : 'dark'} />
         <NavigationBar style="light" />
         <Stack
+          key={session?.user?.id ?? 'anon'}
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: coresAtuais.fundo },
@@ -142,9 +142,6 @@ export default function LayoutRaiz() {
       try {
         agendarForcarBarraNavegacaoEscura();
         initDatabase(db);
-        if (__DEV__) {
-          popularBancoComDadosDeTeste();
-        }
       } catch (error) {
         console.error('[App] Falha ao inicializar o banco de dados:', error);
       } finally {

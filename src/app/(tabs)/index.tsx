@@ -57,7 +57,7 @@ export default function InicioDashboard() {
         treinosConcluidos: 0,
         metaSemanal: 3,
         porcentagem: 0,
-        semanasSeguidas: 2,
+        semanasSeguidas: 0,
         volumeSemana: 0,
         proximoTreino: null,
         proximoTreinoData: null,

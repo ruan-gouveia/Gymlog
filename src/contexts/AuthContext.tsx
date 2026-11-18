@@ -9,6 +9,13 @@ import React, {
   type ReactNode,
 } from 'react';
 
+import {
+  atualizarConfiguracoesUsuario,
+  db,
+  definirUsuarioBancoLocal,
+  initDatabase,
+} from '@/database';
+import { carregarDadosIniciaisDaNuvem } from '@/services/sincronizacaoSupabase';
 import { isSupabaseConfigurado, supabase } from '@/services/supabase';
 
 export type AuthContextData = {
@@ -27,6 +34,31 @@ const AuthContext = createContext<AuthContextData>({
   signOut: async () => {},
 });
 
+function configurarBancoParaSessao(sessao: Session | null): void {
+  const userId = sessao?.user?.id ?? null;
+  definirUsuarioBancoLocal(userId);
+
+  try {
+    initDatabase(db);
+  } catch (error) {
+    console.warn('[Auth] Aviso ao inicializar tabelas locais do usuário:', error);
+  }
+
+  if (sessao?.user) {
+    const nomeMeta =
+      (typeof sessao.user.user_metadata?.nome === 'string' &&
+        sessao.user.user_metadata.nome.trim()) ||
+      sessao.user.email?.split('@')[0] ||
+      'Usuário';
+
+    try {
+      atualizarConfiguracoesUsuario({ nome_usuario: nomeMeta });
+    } catch {}
+
+    void carregarDadosIniciaisDaNuvem(sessao.user.id, nomeMeta);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -38,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function restaurarSessao() {
       if (!isSupabaseConfigurado) {
         if (ativo) {
+          configurarBancoParaSessao(null);
           setSession(null);
           setUser(null);
           setCarregando(false);
@@ -51,8 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn('[Auth] Falha ao restaurar sessão:', error.message);
         }
         if (ativo) {
-          setSession(data.session ?? null);
-          setUser(data.session?.user ?? null);
+          const sessaoAtiva = data.session ?? null;
+          configurarBancoParaSessao(sessaoAtiva);
+          setSession(sessaoAtiva);
+          setUser(sessaoAtiva?.user ?? null);
         }
       } catch (error) {
         console.warn('[Auth] Erro inesperado ao verificar sessão:', error);
@@ -69,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, novaSessao) => {
       if (!ativo) return;
+      configurarBancoParaSessao(novaSessao);
       setSession(novaSessao);
       setUser(novaSessao?.user ?? null);
       setCarregando(false);
@@ -82,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    configurarBancoParaSessao(null);
     setSession(null);
     setUser(null);
   }, []);
