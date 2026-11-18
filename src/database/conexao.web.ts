@@ -14,8 +14,16 @@ type EstadoBancoWeb = {
   configuracoes_usuario: ConfigWeb[];
 };
 
-export const NOME_BANCO = 'gymlog.db';
-const STORAGE_KEY = 'gymlog_sqlite_web_v3';
+export const NOME_BANCO = 'gymlog_v2.db';
+const STORAGE_PREFIX = 'gymlog_sqlite_web_v4';
+let usuarioAtualId: string | null = null;
+
+function obterChaveStorage(): string {
+  if (!usuarioAtualId || !usuarioAtualId.trim()) {
+    return `${STORAGE_PREFIX}_anon`;
+  }
+  return `${STORAGE_PREFIX}_${usuarioAtualId.trim()}`;
+}
 
 function criarEstadoInicial(): EstadoBancoWeb {
   return {
@@ -42,7 +50,7 @@ function carregarEstado(): EstadoBancoWeb {
     return criarEstadoInicial();
   }
   try {
-    const bruto = window.localStorage.getItem(STORAGE_KEY);
+    const bruto = window.localStorage.getItem(obterChaveStorage());
     if (!bruto) return criarEstadoInicial();
     const parsed = JSON.parse(bruto) as Partial<EstadoBancoWeb>;
     return {
@@ -63,11 +71,22 @@ function carregarEstado(): EstadoBancoWeb {
 let estado = carregarEstado();
 let emTransacao = false;
 
+export function definirUsuarioBancoLocal(userId: string | null): void {
+  const novoId = userId?.trim() || null;
+  if (usuarioAtualId === novoId) return;
+  usuarioAtualId = novoId;
+  estado = carregarEstado();
+}
+
+export function obterUsuarioBancoLocal(): string | null {
+  return usuarioAtualId;
+}
+
 function persistirEstado(): void {
   if (emTransacao) return;
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    window.localStorage.setItem(obterChaveStorage(), JSON.stringify(estado));
   } catch {}
 }
 

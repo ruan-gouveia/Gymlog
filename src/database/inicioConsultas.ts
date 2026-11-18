@@ -130,7 +130,7 @@ function calcularSequenciaSemanas(
     }
   }
 
-  return Math.max(1, streak);
+  return streak;
 }
 
 export function obterResumoSemana(dataRef?: Date): ResumoSemana {
