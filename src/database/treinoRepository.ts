@@ -1,3 +1,7 @@
+import {
+  removerTreinoDaNuvem,
+  sincronizarTreinoComNuvem,
+} from '@/services/sincronizacaoSupabase';
 import { db } from './conexao';
 import type { RepetirTreino, StatusTreino } from './tipos';
 
@@ -89,6 +93,10 @@ export function salvarTreinoComExercicios(
     treinoId = inserirTreino(treino, exercicios);
   });
 
+  if (treinoId > 0) {
+    void sincronizarTreinoComNuvem(treinoId);
+  }
+
   return treinoId;
 }
 
@@ -125,6 +133,8 @@ export function atualizarTreinoComExercicios(
     db.runSync('DELETE FROM exercicios WHERE treino_id = ?', [id]);
     inserirExercicios(id, exercicios);
   });
+
+  void sincronizarTreinoComNuvem(id);
 }
 
 export function agendarTreino(
@@ -166,6 +176,10 @@ export function agendarTreinoRecorrente(
     }
   });
 
+  for (const id of ids) {
+    void sincronizarTreinoComNuvem(id);
+  }
+
   return ids;
 }
 
@@ -197,6 +211,8 @@ export function concluirTreinoAoVivo(
       db.runSync(`UPDATE exercicios SET concluida = 1 WHERE treino_id = ?`, [id]);
     }
   });
+
+  void sincronizarTreinoComNuvem(id);
 }
 
 export function reagendarTreinoParaHoje(id: number, novoHorario?: string): void {
@@ -248,12 +264,16 @@ export function reagendarTreinoParaHoje(id: number, novoHorario?: string): void 
       [hoje, horarioFinal, id]
     );
   });
+
+  void sincronizarTreinoComNuvem(id);
 }
 
 export function atualizarStatusTreino(id: number, novoStatus: StatusTreino): void {
   db.withTransactionSync(() => {
     db.runSync(`UPDATE treinos SET status = ? WHERE id = ?`, [novoStatus, id]);
   });
+
+  void sincronizarTreinoComNuvem(id);
 }
 
 export function marcarExercicioConcluido(
@@ -269,4 +289,6 @@ export function excluirTreino(id: number): void {
     db.runSync('DELETE FROM exercicios WHERE treino_id = ?', [id]);
     db.runSync('DELETE FROM treinos WHERE id = ?', [id]);
   });
+
+  void removerTreinoDaNuvem(id);
 }
