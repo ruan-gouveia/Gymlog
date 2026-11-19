@@ -1,5 +1,4 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { startTransition, useCallback, useEffect, useState } from 'react';
@@ -33,8 +32,12 @@ import {
   atualizarPreferenciasESincronizarNotificacoes,
   useNotificacoesTreino,
 } from '@/services/notificacoesService';
-import { sincronizarPerfilComNuvem } from '@/services/sincronizacaoSupabase';
+import {
+  processarFilaSincronizacao,
+  sincronizarPerfilComNuvem,
+} from '@/services/sincronizacaoSupabase';
 import { showToast } from '@/stores/toastStore';
+import { useSyncStore } from '@/stores/useSyncStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 
 type ProximoTreinoPreview = {
@@ -129,6 +132,11 @@ export default function Perfil() {
   const setTema = useThemeStore((state) => state.setTema);
   const ehEscuro = tema === 'dark';
 
+  const isOnline = useSyncStore((state) => state.isOnline);
+  const isSincronizando = useSyncStore((state) => state.isSincronizando);
+  const filaSync = useSyncStore((state) => state.fila);
+  const ultimaSincronizacao = useSyncStore((state) => state.ultimaSincronizacao);
+
   const nomeExibicao =
     (typeof user?.user_metadata?.nome === 'string' && user.user_metadata.nome.trim()) ||
     user?.email?.split('@')[0] ||
@@ -149,8 +157,6 @@ export default function Perfil() {
   const [modalLembretesVisivel, setModalLembretesVisivel] = useState(false);
   const [modalSobreVisivel, setModalSobreVisivel] = useState(false);
   const [exportandoBackup, setExportandoBackup] = useState(false);
-
-  const versaoApp = Constants.expoConfig?.version ?? '2.0.0';
 
   const carregarPerfil = useCallback(() => {
     try {
@@ -245,6 +251,20 @@ export default function Perfil() {
     } catch (error) {
       console.error('[Perfil] Erro ao salvar lembretes:', error);
       showToast('Erro ao salvar configurações de lembretes.', 'erro');
+    }
+  };
+
+  const handleSincronizarAgora = async () => {
+    if (isSincronizando) return;
+    if (filaSync.length === 0) {
+      showToast('Tudo sincronizado com a nuvem!');
+      return;
+    }
+    const concluido = await processarFilaSincronizacao();
+    if (concluido) {
+      showToast('Fila sincronizada com sucesso!');
+    } else {
+      showToast('Sem conexão. A fila será enviada quando a internet voltar.', 'erro');
     }
   };
 
@@ -431,6 +451,46 @@ export default function Perfil() {
 
           <TouchableOpacity
             accessibilityRole="button"
+            accessibilityLabel="Status da sincronização na nuvem"
+            onPress={() => void handleSincronizarAgora()}
+            disabled={isSincronizando}
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between py-3.5 border-b border-slate-100 dark:border-[#252852]/70"
+          >
+            <View className="flex-row items-center gap-3 flex-1 pr-2">
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
+                <Feather
+                  name={!isOnline ? 'wifi-off' : filaSync.length > 0 ? 'upload-cloud' : 'check-circle'}
+                  size={18}
+                  color={!isOnline ? '#D97706' : ehEscuro ? '#7C93FF' : '#5C7CFA'}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[15px] font-bold text-slate-900 dark:text-white">
+                  Sincronização
+                </Text>
+                <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8]" numberOfLines={1}>
+                  {!isOnline
+                    ? `Offline · ${filaSync.length} na fila local`
+                    : isSincronizando
+                    ? `Sincronizando fila (${filaSync.length} pendente(s))...`
+                    : filaSync.length > 0
+                    ? `${filaSync.length} operação(ões) na fila · Toque para enviar`
+                    : ultimaSincronizacao
+                    ? `Sincronizado · Último envio às ${ultimaSincronizacao}`
+                    : 'Online · Sincronizado com o Supabase'}
+                </Text>
+              </View>
+            </View>
+            {isSincronizando ? (
+              <ActivityIndicator size="small" color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
+            ) : (
+              <Feather name="refresh-cw" size={17} color={ehEscuro ? '#6C7293' : '#94A3B8'} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            accessibilityRole="button"
             accessibilityLabel="Exportar dados em JSON"
             onPress={handleExportarBackup}
             disabled={exportandoBackup}
@@ -470,6 +530,7 @@ export default function Perfil() {
                   name="dumbbell"
                   size={20}
                   color={ehEscuro ? '#7C93FF' : '#5C7CFA'}
+                  style={{ transform: [{ rotate: '-45deg' }] }}
                 />
               </View>
               <View>
@@ -477,7 +538,7 @@ export default function Perfil() {
                   Sobre o aplicativo
                 </Text>
                 <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8]">
-                  GymLog 2.0
+                  GymLog
                 </Text>
               </View>
             </View>
@@ -525,52 +586,35 @@ export default function Perfil() {
             className="w-full rounded-[28px] bg-white dark:bg-[#1C1E3A] border border-[#EAEFF5] dark:border-[#23264D] p-6 shadow-xl"
           >
             <View className="items-center mb-4">
-              <View className="h-16 w-16 items-center justify-center rounded-2xl bg-[#EEF2FF] dark:bg-[#252854] mb-3">
+              <View
+                className="h-[68px] w-[68px] items-center justify-center rounded-[22px] bg-[#6378F6] mb-3.5"
+                style={{
+                  shadowColor: '#5C7CFA',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 16,
+                  elevation: 6,
+                }}
+              >
                 <MaterialCommunityIcons
                   name="dumbbell"
                   size={32}
-                  color={ehEscuro ? '#7C93FF' : '#5C7CFA'}
+                  color="#FFFFFF"
+                  style={{ transform: [{ rotate: '-45deg' }] }}
                 />
               </View>
               <Text className="text-[20px] font-extrabold text-slate-900 dark:text-white">
-                GymLog 2.0
+                GymLog
               </Text>
               <Text className="text-[12px] font-semibold text-[#5C7CFA] dark:text-[#7C93FF] mt-0.5">
-                Versão {versaoApp} · Build SDK 58
+                Versão 2.0.0
               </Text>
             </View>
 
-            <Text className="text-[13px] leading-5 text-center text-slate-600 dark:text-[#A3A6CC] mb-4">
+            <Text className="text-[13px] leading-5 text-center text-slate-600 dark:text-[#A3A6CC] mb-6">
               Sistema móvel para planejamento, execução ao vivo e acompanhamento estatístico de
               treinos de musculação com persistência local estruturada.
             </Text>
-
-            <View className="rounded-2xl bg-[#F8FAFC] dark:bg-[#14152D] border border-slate-200/70 dark:border-[#252852] p-3.5 mb-5 gap-2">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-[12px] font-semibold text-slate-400 dark:text-[#8E92B8]">
-                  Persistência Local
-                </Text>
-                <Text className="text-[12px] font-bold text-slate-800 dark:text-white">
-                  SQLite (expo-sqlite) + AsyncStorage
-                </Text>
-              </View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-[12px] font-semibold text-slate-400 dark:text-[#8E92B8]">
-                  Arquitetura & UI
-                </Text>
-                <Text className="text-[12px] font-bold text-slate-800 dark:text-white">
-                  Expo Router · Zustand · NativeWind
-                </Text>
-              </View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-[12px] font-semibold text-slate-400 dark:text-[#8E92B8]">
-                  Recursos Extras
-                </Text>
-                <Text className="text-[12px] font-bold text-slate-800 dark:text-white">
-                  Gráficos · Backup JSON · Lembretes
-                </Text>
-              </View>
-            </View>
 
             <TouchableOpacity
               accessibilityRole="button"

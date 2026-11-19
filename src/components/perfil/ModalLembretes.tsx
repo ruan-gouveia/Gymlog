@@ -1,18 +1,91 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useState } from 'react';
 import {
+  Animated,
   GestureResponderEvent,
   LayoutChangeEvent,
   Modal,
+  Platform,
   Pressable,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
+  useAnimatedValue,
   View,
 } from 'react-native';
 
 import { formatarHorarioDisparo } from '@/services/notificacoesService';
+
+function SwitchLembretes({
+  ativo,
+  onAlternar,
+  ehEscuro,
+  accessibilityLabel,
+}: {
+  ativo: boolean;
+  onAlternar: (novoValor: boolean) => void;
+  ehEscuro: boolean;
+  accessibilityLabel: string;
+}) {
+  const progresso = useAnimatedValue(ativo ? 1 : 0);
+
+  useEffect(() => {
+    Animated.spring(progresso, {
+      toValue: ativo ? 1 : 0,
+      damping: 18,
+      stiffness: 240,
+      mass: 0.7,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [ativo, progresso]);
+
+  const handlePress = () => {
+    const proximo = !ativo;
+    if (Platform.OS !== 'web') {
+      void Haptics.selectionAsync();
+    }
+    onAlternar(proximo);
+  };
+
+  const translateX = progresso.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 22],
+  });
+
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: ativo }}
+      accessibilityLabel={accessibilityLabel}
+      onPress={handlePress}
+      hitSlop={8}
+      style={{
+        width: 52,
+        height: 30,
+        borderRadius: 999,
+        padding: 3,
+        backgroundColor: ativo ? '#5C7CFA' : ehEscuro ? '#2E325A' : '#E2E8F0',
+        justifyContent: 'center',
+      }}
+    >
+      <Animated.View
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: '#FFFFFF',
+          transform: [{ translateX }],
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 2,
+          elevation: 2,
+        }}
+      />
+    </Pressable>
+  );
+}
 
 type ModalLembretesProps = {
   visivel: boolean;
@@ -171,12 +244,11 @@ export function ModalLembretes({
                 Receba alertas antes dos treinos agendados
               </Text>
             </View>
-            <Switch
-              value={ativo}
-              onValueChange={setAtivo}
-              trackColor={{ false: ehEscuro ? '#2E325A' : '#E2E8F0', true: '#5C7CFA' }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor={ehEscuro ? '#2E325A' : '#E2E8F0'}
+            <SwitchLembretes
+              ativo={ativo}
+              onAlternar={setAtivo}
+              ehEscuro={ehEscuro}
+              accessibilityLabel="Ativar lembretes gerais"
             />
           </View>
 
