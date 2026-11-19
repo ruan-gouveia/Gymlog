@@ -5,6 +5,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgendaHorizontal } from '@/components/dashboard/AgendaHorizontal';
+import { BannerSincronizacao } from '@/components/dashboard/BannerSincronizacao';
 import { CardMetaSemanal } from '@/components/dashboard/CardMetaSemanal';
 import { CardTreinoHoje } from '@/components/dashboard/CardTreinoHoje';
 import { CardTreinoPendente } from '@/components/dashboard/CardTreinoPendente';
@@ -185,6 +186,8 @@ export default function InicioDashboard() {
             <Feather name="user" size={20} color="#4F67ED" />
           </TouchableOpacity>
         </View>
+
+        <BannerSincronizacao />
 
         <CardMetaSemanal
           treinosConcluidos={resumoSemana.treinosConcluidos}
