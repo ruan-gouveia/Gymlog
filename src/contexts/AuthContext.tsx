@@ -15,8 +15,12 @@ import {
   definirUsuarioBancoLocal,
   initDatabase,
 } from '@/database';
-import { carregarDadosIniciaisDaNuvem } from '@/services/sincronizacaoSupabase';
+import {
+  carregarDadosIniciaisDaNuvem,
+  iniciarMonitoramentoRedeSync,
+} from '@/services/sincronizacaoSupabase';
 import { isSupabaseConfigurado, supabase } from '@/services/supabase';
+import { useSyncStore } from '@/stores/useSyncStore';
 
 export type AuthContextData = {
   session: Session | null;
@@ -56,6 +60,8 @@ function configurarBancoParaSessao(sessao: Session | null): void {
     } catch {}
 
     void carregarDadosIniciaisDaNuvem(sessao.user.id, nomeMeta);
+  } else {
+    void useSyncStore.getState().carregarFilaDoUsuario(null);
   }
 }
 
@@ -63,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const pararMonitoramentoRede = iniciarMonitoramentoRedeSync();
+    return pararMonitoramentoRede;
+  }, []);
 
   useEffect(() => {
     let ativo = true;

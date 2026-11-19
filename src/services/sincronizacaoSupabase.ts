@@ -1,3 +1,6 @@
+import * as Network from 'expo-network';
+import { AppState, Platform } from 'react-native';
+
 import { db, obterUsuarioBancoLocal } from '@/database/conexao';
 import {
   atualizarConfiguracoesUsuario,
@@ -6,6 +9,13 @@ import {
 import { obterConfiguracaoLembretes } from '@/database/perfilConsultas';
 import type { Exercicio, StatusTreino, Treino } from '@/database/tipos';
 import { isSupabaseConfigurado, supabase } from '@/services/supabase';
+import {
+  useSyncStore,
+  type ItemFilaSync,
+  type PayloadDeleteTreino,
+  type PayloadUpsertPerfil,
+  type PayloadUpsertTreino,
+} from '@/stores/useSyncStore';
 
 type TreinoNuvemRow = {
   local_id: number;
@@ -29,6 +39,245 @@ type ExercicioNuvemRow = {
   concluida: number;
 };
 
+let processandoFila = false;
+let monitoramentoIniciado = false;
+
+export async function verificarConexaoReal(): Promise<boolean> {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'onLine' in navigator) {
+    if (!navigator.onLine) {
+      useSyncStore.getState().setOnline(false);
+      return false;
+    }
+  }
+
+  try {
+    const estadoRede = await Network.getNetworkStateAsync();
+    const conectado =
+      Boolean(estadoRede.isConnected) && estadoRede.isInternetReachable !== false;
+    useSyncStore.getState().setOnline(conectado);
+    return conectado;
+  } catch {
+    const fallbackOnline =
+      Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.onLine : true;
+    useSyncStore.getState().setOnline(fallbackOnline);
+    return fallbackOnline;
+  }
+}
+
+async function executarItemNoSupabase(item: ItemFilaSync): Promise<void> {
+  if (item.tipo === 'UPSERT_TREINO') {
+    const { treino, exercicios } = item.payload as PayloadUpsertTreino;
+
+    const { error: erroTreino } = await supabase.from('treinos').upsert(
+      {
+        user_id: item.userId,
+        local_id: treino.id,
+        nome: treino.nome,
+        data: treino.data,
+        duracao: treino.duracao,
+        grupo_muscular: treino.grupo_muscular,
+        observacoes: treino.observacoes,
+        status: treino.status,
+        horario: treino.horario,
+        repetir: String(treino.repetir ?? 'uma_vez'),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,local_id' }
+    );
+
+    if (erroTreino) {
+      throw new Error(erroTreino.message);
+    }
+
+    const { error: erroDelEx } = await supabase
+      .from('exercicios')
+      .delete()
+      .eq('user_id', item.userId)
+      .eq('treino_local_id', treino.id);
+
+    if (erroDelEx) {
+      throw new Error(erroDelEx.message);
+    }
+
+    if (exercicios.length > 0) {
+      const payloadEx = exercicios.map((ex) => ({
+        user_id: item.userId,
+        treino_local_id: treino.id,
+        nome: ex.nome,
+        series: ex.series,
+        repeticoes: ex.repeticoes,
+        carga: Number(ex.carga),
+        descanso: ex.descanso,
+        concluida: ex.concluida,
+      }));
+
+      const { error: erroInsEx } = await supabase.from('exercicios').insert(payloadEx);
+      if (erroInsEx) {
+        throw new Error(erroInsEx.message);
+      }
+    }
+    return;
+  }
+
+  if (item.tipo === 'DELETE_TREINO') {
+    const { local_id } = item.payload as PayloadDeleteTreino;
+    const { error } = await supabase
+      .from('treinos')
+      .delete()
+      .eq('user_id', item.userId)
+      .eq('local_id', local_id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return;
+  }
+
+  if (item.tipo === 'UPSERT_PERFIL') {
+    const perfil = item.payload as PayloadUpsertPerfil;
+    const { error } = await supabase.from('perfis').upsert(
+      {
+        id: item.userId,
+        nome: perfil.nome || 'Usuário',
+        meta_semanal: perfil.meta_semanal || 3,
+        lembretes_ativo: perfil.lembretes_ativo,
+        horario_lembretes: perfil.horario_lembretes ?? '18:00',
+        dias_lembretes: perfil.dias_lembretes ?? 'Seg, Qua e Sex',
+        antecedencia_lembrete: perfil.antecedencia_lembrete,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+export async function processarFilaSincronizacao(): Promise<boolean> {
+  if (processandoFila || !isSupabaseConfigurado) {
+    return false;
+  }
+
+  const userId = obterUsuarioBancoLocal();
+  if (!userId) {
+    return false;
+  }
+
+  const online = await verificarConexaoReal();
+  if (!online) {
+    return false;
+  }
+
+  const { fila } = useSyncStore.getState();
+  if (fila.length === 0) {
+    return true;
+  }
+
+  processandoFila = true;
+  useSyncStore.getState().setSincronizando(true);
+
+  try {
+    while (useSyncStore.getState().fila.length > 0) {
+      const aindaOnline = await verificarConexaoReal();
+      if (!aindaOnline) {
+        break;
+      }
+
+      const itemAtual = useSyncStore.getState().fila[0];
+      if (!itemAtual) break;
+
+      if (itemAtual.userId !== userId) {
+        break;
+      }
+
+      try {
+        await executarItemNoSupabase(itemAtual);
+        await useSyncStore.getState().removerItemDaFila(itemAtual.id);
+        useSyncStore.getState().registrarSucessoSincronizacao();
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : 'Falha de conexão com o servidor.';
+
+        if (
+          msg.toLowerCase().includes('network') ||
+          msg.toLowerCase().includes('fetch') ||
+          msg.toLowerCase().includes('failed to fetch')
+        ) {
+          useSyncStore.getState().setOnline(false);
+        }
+
+        await useSyncStore.getState().registrarFalhaItem(itemAtual.id, msg);
+        if (__DEV__) {
+          console.warn('[Offline-First] Item mantido na fila para nova tentativa:', msg);
+        }
+        break;
+      }
+    }
+
+    return useSyncStore.getState().fila.length === 0;
+  } finally {
+    processandoFila = false;
+    useSyncStore.getState().setSincronizando(false);
+  }
+}
+
+export function iniciarMonitoramentoRedeSync(): () => void {
+  if (monitoramentoIniciado) {
+    return () => {};
+  }
+  monitoramentoIniciado = true;
+
+  void verificarConexaoReal().then((online) => {
+    if (online) {
+      void processarFilaSincronizacao();
+    }
+  });
+
+  const subNetwork = Network.addNetworkStateListener((state) => {
+    const conectado = Boolean(state.isConnected) && state.isInternetReachable !== false;
+    useSyncStore.getState().setOnline(conectado);
+    if (conectado) {
+      void processarFilaSincronizacao();
+    }
+  });
+
+  const subAppState = AppState.addEventListener('change', (nextState) => {
+    if (nextState === 'active') {
+      void verificarConexaoReal().then((online) => {
+        if (online) {
+          void processarFilaSincronizacao();
+        }
+      });
+    }
+  });
+
+  const handleWebOnline = () => {
+    useSyncStore.getState().setOnline(true);
+    void processarFilaSincronizacao();
+  };
+
+  const handleWebOffline = () => {
+    useSyncStore.getState().setOnline(false);
+  };
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.addEventListener('online', handleWebOnline);
+    window.addEventListener('offline', handleWebOffline);
+  }
+
+  return () => {
+    monitoramentoIniciado = false;
+    subNetwork.remove();
+    subAppState.remove();
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.removeEventListener('online', handleWebOnline);
+      window.removeEventListener('offline', handleWebOffline);
+    }
+  };
+}
+
 export async function sincronizarTreinoComNuvem(treinoId: number): Promise<void> {
   const userId = obterUsuarioBancoLocal();
   if (!userId || !isSupabaseConfigurado) return;
@@ -49,56 +298,21 @@ export async function sincronizarTreinoComNuvem(treinoId: number): Promise<void>
     );
     const exerciciosDoTreino = todosExercicios.filter((e) => e.treino_id === treinoId);
 
-    const { error: erroTreino } = await supabase.from('treinos').upsert(
-      {
-        user_id: userId,
-        local_id: treino.id,
-        nome: treino.nome,
-        data: treino.data,
-        duracao: treino.duracao,
-        grupo_muscular: treino.grupo_muscular,
-        observacoes: treino.observacoes,
-        status: treino.status,
-        horario: treino.horario,
-        repetir: String(treino.repetir ?? 'uma_vez'),
-        updated_at: new Date().toISOString(),
+    await useSyncStore.getState().enfileirarOperacao({
+      userId,
+      tipo: 'UPSERT_TREINO',
+      entidadeId: treino.id,
+      descricao: `Salvar treino: ${treino.nome}`,
+      payload: {
+        treino,
+        exercicios: exerciciosDoTreino,
       },
-      { onConflict: 'user_id,local_id' }
-    );
+    });
 
-    if (erroTreino) {
-      if (__DEV__) {
-        console.warn('[Supabase Sync] Aviso ao sincronizar treino:', erroTreino.message);
-      }
-      return;
-    }
-
-    await supabase
-      .from('exercicios')
-      .delete()
-      .eq('user_id', userId)
-      .eq('treino_local_id', treino.id);
-
-    if (exerciciosDoTreino.length > 0) {
-      const payload = exerciciosDoTreino.map((ex) => ({
-        user_id: userId,
-        treino_local_id: treino.id,
-        nome: ex.nome,
-        series: ex.series,
-        repeticoes: ex.repeticoes,
-        carga: Number(ex.carga),
-        descanso: ex.descanso,
-        concluida: ex.concluida,
-      }));
-
-      const { error: erroEx } = await supabase.from('exercicios').insert(payload);
-      if (erroEx && __DEV__) {
-        console.warn('[Supabase Sync] Aviso ao sincronizar exercícios:', erroEx.message);
-      }
-    }
+    void processarFilaSincronizacao();
   } catch (error) {
     if (__DEV__) {
-      console.warn('[Supabase Sync] Falha silenciosa ao sincronizar treino:', error);
+      console.warn('[Offline-First] Erro ao enfileirar treino:', error);
     }
   }
 }
@@ -108,14 +322,20 @@ export async function removerTreinoDaNuvem(treinoId: number): Promise<void> {
   if (!userId || !isSupabaseConfigurado) return;
 
   try {
-    await supabase
-      .from('treinos')
-      .delete()
-      .eq('user_id', userId)
-      .eq('local_id', treinoId);
+    await useSyncStore.getState().enfileirarOperacao({
+      userId,
+      tipo: 'DELETE_TREINO',
+      entidadeId: treinoId,
+      descricao: `Excluir treino #${treinoId}`,
+      payload: {
+        local_id: treinoId,
+      },
+    });
+
+    void processarFilaSincronizacao();
   } catch (error) {
     if (__DEV__) {
-      console.warn('[Supabase Sync] Falha silenciosa ao remover treino da nuvem:', error);
+      console.warn('[Offline-First] Erro ao enfileirar exclusão de treino:', error);
     }
   }
 }
@@ -128,22 +348,25 @@ export async function sincronizarPerfilComNuvem(): Promise<void> {
     const config = obterConfiguracoesUsuario();
     const lembretes = obterConfiguracaoLembretes();
 
-    await supabase.from('perfis').upsert(
-      {
-        id: userId,
+    await useSyncStore.getState().enfileirarOperacao({
+      userId,
+      tipo: 'UPSERT_PERFIL',
+      entidadeId: 1,
+      descricao: 'Atualizar preferências do perfil',
+      payload: {
         nome: config.nome_usuario || 'Usuário',
         meta_semanal: config.meta_semanal || 3,
         lembretes_ativo: lembretes.ativo,
         horario_lembretes: config.horario_lembretes ?? '18:00',
         dias_lembretes: config.dias_lembretes ?? 'Seg, Qua e Sex',
         antecedencia_lembrete: lembretes.antecedenciaMinutos,
-        updated_at: new Date().toISOString(),
       },
-      { onConflict: 'id' }
-    );
+    });
+
+    void processarFilaSincronizacao();
   } catch (error) {
     if (__DEV__) {
-      console.warn('[Supabase Sync] Falha silenciosa ao sincronizar perfil:', error);
+      console.warn('[Offline-First] Erro ao enfileirar atualização de perfil:', error);
     }
   }
 }
@@ -155,6 +378,17 @@ export async function carregarDadosIniciaisDaNuvem(
   if (!userId || !isSupabaseConfigurado) return;
 
   try {
+    const filaPendente = await useSyncStore.getState().carregarFilaDoUsuario(userId);
+    const online = await verificarConexaoReal();
+
+    if (!online) {
+      return;
+    }
+
+    if (filaPendente.length > 0) {
+      await processarFilaSincronizacao();
+    }
+
     const { data: perfilNuvem, error: erroPerfil } = await supabase
       .from('perfis')
       .select('nome, meta_semanal, lembretes_ativo, horario_lembretes, dias_lembretes')
@@ -192,6 +426,7 @@ export async function carregarDadosIniciaisDaNuvem(
       .order('local_id', { ascending: true });
 
     if (erroTreinos || !treinosNuvem || treinosNuvem.length === 0) {
+      useSyncStore.getState().registrarSucessoSincronizacao();
       return;
     }
 
@@ -243,9 +478,11 @@ export async function carregarDadosIniciaisDaNuvem(
         }
       }
     });
+
+    useSyncStore.getState().registrarSucessoSincronizacao();
   } catch (error) {
     if (__DEV__) {
-      console.warn('[Supabase Sync] Aviso ao restaurar dados da nuvem:', error);
+      console.warn('[Offline-First] Aviso ao restaurar dados da nuvem:', error);
     }
   }
 }
