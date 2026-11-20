@@ -1,20 +1,26 @@
 import { Feather } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  type DateTimePickerChangeEvent,
+} from '@react-native-community/datetimepicker';
 import type { ComponentProps } from 'react';
+import React, { useState } from 'react';
 import {
-    Controller,
-    useFieldArray,
-    useForm,
-    type Control,
-    type Path,
+  Controller,
+  useFieldArray,
+  useForm,
+  type Control,
+  type Path,
 } from 'react-hook-form';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { z } from 'zod';
 
@@ -23,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import type { TreinoDetalhe } from '@/database/treinoConsultas';
 import type { ExercicioParaSalvar, NovoTreino } from '@/database/treinoRepository';
 
-
+const REGEX_HORARIO = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const serieSchema = z.object({
   repeticoes: z
@@ -59,6 +65,12 @@ const treinoSchema = z.object({
       },
       { message: 'Data inexistente.' }
     ),
+  horario: z
+    .string()
+    .trim()
+    .regex(REGEX_HORARIO, 'Use o formato HH:mm (00:00 a 23:59).')
+    .or(z.literal(''))
+    .optional(),
   duracao: z
     .string()
     .trim()
@@ -76,6 +88,7 @@ export function detalheParaFormulario(t: TreinoDetalhe): TreinoEdicaoValues {
   return {
     nome: t.nome,
     data: t.data,
+    horario: t.horario ?? '',
     duracao: String(t.duracao),
     grupo_muscular: t.grupo_muscular,
     observacoes: t.observacoes ?? '',
@@ -98,6 +111,7 @@ export function formularioParaPayload(v: TreinoEdicaoValues): {
     treino: {
       nome: v.nome.trim(),
       data: v.data.trim(),
+      horario: v.horario?.trim() || null,
       duracao: Number(v.duracao),
       grupo_muscular: v.grupo_muscular.trim(),
       observacoes: v.observacoes?.trim() || undefined,
@@ -113,7 +127,6 @@ export function formularioParaPayload(v: TreinoEdicaoValues): {
     ),
   };
 }
-
 
 type CampoProps = Omit<ComponentProps<typeof Input>, 'value' | 'onChangeText' | 'error'> & {
   control: Control<TreinoEdicaoValues>;
@@ -213,73 +226,196 @@ export function TreinoEdicaoForm({
 
   const { fields, append, remove } = useFieldArray({ control, name: 'exercicios' });
 
+  const [mostrarPickerIOS, setMostrarPickerIOS] = useState(false);
+  const [dataHoraIOS, setDataHoraIOS] = useState(new Date());
+  const [callbackHorarioIOS, setCallbackHorarioIOS] = useState<((h: string) => void) | null>(null);
+
+  function abrirSeletorHorario(horarioAtual: string, onSelecionar: (h: string) => void) {
+    const [h, m] = (horarioAtual || '18:00').split(':').map(Number);
+    const dataRef = new Date();
+    dataRef.setHours(isNaN(h) ? 18 : h);
+    dataRef.setMinutes(isNaN(m) ? 0 : m);
+    dataRef.setSeconds(0);
+
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: dataRef,
+        mode: 'time',
+        is24Hour: true,
+        onValueChange: (_event: DateTimePickerChangeEvent, selectedDate?: Date) => {
+          if (!selectedDate) return;
+          const horas = String(selectedDate.getHours()).padStart(2, '0');
+          const minutos = String(selectedDate.getMinutes()).padStart(2, '0');
+          onSelecionar(`${horas}:${minutos}`);
+        },
+      });
+    } else if (Platform.OS === 'ios') {
+      setDataHoraIOS(dataRef);
+      setCallbackHorarioIOS(() => onSelecionar);
+      setMostrarPickerIOS(true);
+    }
+  }
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        className="flex-1 px-5"
-        contentContainerStyle={{ paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Campo control={control} name="nome" label="Nome do treino" placeholder="Ex: Treino de Peito" />
+        <ScrollView
+          className="flex-1 px-5"
+          contentContainerStyle={{ paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Campo
+            control={control}
+            name="nome"
+            label="Nome do treino"
+            placeholder="Ex: Treino de Peito"
+          />
 
-        <View className="flex-row gap-3">
-          <View className="flex-1">
-            <Campo control={control} name="data" label="Data" placeholder="DD/MM/AAAA" />
-          </View>
-          <View className="flex-1">
-            <Campo
-              control={control}
-              name="duracao"
-              label="Duração (min)"
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <Campo control={control} name="grupo_muscular" label="Grupo muscular ou objetivo" />
-        <Campo control={control} name="observacoes" label="Observações" multiline />
-
-        <Text className="mb-3 mt-2 text-lg font-bold text-slate-900 dark:text-white">Exercícios</Text>
-
-        {fields.map((campo, i) => (
-          <View key={campo.id} className="mb-4 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-white dark:bg-[#1C1E3A] p-4">
-            <View className="flex-row items-start gap-3">
-              <View className="flex-1">
-                <Campo control={control} name={`exercicios.${i}.nome`} label="Exercício" />
-              </View>
-              {fields.length > 1 && (
-                <TouchableOpacity onPress={() => remove(i)} hitSlop={8} className="mt-8">
-                  <Feather name="trash-2" size={20} color="#ef4444" />
-                </TouchableOpacity>
-              )}
+          {/* Data e Horário lado a lado */}
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Campo control={control} name="data" label="Data" placeholder="DD/MM/AAAA" />
             </View>
 
-            <Campo
-              control={control}
-              name={`exercicios.${i}.descanso`}
-              label="Descanso (segundos)"
-              keyboardType="numeric"
-            />
-
-            <SeriesDoExercicio control={control} exercicioIndex={i} />
+            <View className="flex-1">
+              <Controller
+                control={control}
+                name="horario"
+                render={({ field: { onChange, value }, fieldState: { error } }) =>
+                  Platform.OS === 'web' ? (
+                    <Input
+                      label="Horário"
+                      placeholder="18:00"
+                      value={value ?? ''}
+                      onChangeText={onChange}
+                      error={error?.message}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => abrirSeletorHorario(value ?? '', onChange)}
+                    >
+                      <View style={{ pointerEvents: 'none' }}>
+                        <Input
+                          label="Horário"
+                          placeholder="18:00"
+                          value={value ?? ''}
+                          editable={false}
+                          error={error?.message}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }
+              />
+            </View>
           </View>
-        ))}
 
-        <View className="mb-6">
-          <Button
-            title="+ Adicionar exercício"
-            variant="dashed"
-            onPress={() =>
-              append({ nome: '', descanso: '60', series: [{ repeticoes: '10', carga: '0' }] })
-            }
-          />
-        </View>
+          {/* Duração e Grupo Muscular lado a lado */}
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Campo
+                control={control}
+                name="duracao"
+                label="Duração (min)"
+                keyboardType="numeric"
+              />
+            </View>
+            <View className="flex-1">
+              <Campo
+                control={control}
+                name="grupo_muscular"
+                label="Grupo muscular"
+                placeholder="Ex: Peito"
+              />
+            </View>
+          </View>
 
-        <Button title={rotuloSubmit} isLoading={isSubmitting} onPress={handleSubmit(onSubmit)} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Campo control={control} name="observacoes" label="Observações" multiline />
+
+          <Text className="mb-3 mt-2 text-lg font-bold text-slate-900 dark:text-white">
+            Exercícios
+          </Text>
+
+          {fields.map((campo, i) => (
+            <View
+              key={campo.id}
+              className="mb-4 rounded-2xl border border-indigo-100 dark:border-[#282B54] bg-white dark:bg-[#1C1E3A] p-4"
+            >
+              <View className="flex-row items-start gap-3">
+                <View className="flex-1">
+                  <Campo control={control} name={`exercicios.${i}.nome`} label="Exercício" />
+                </View>
+                {fields.length > 1 && (
+                  <TouchableOpacity onPress={() => remove(i)} hitSlop={8} className="mt-8">
+                    <Feather name="trash-2" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Campo
+                control={control}
+                name={`exercicios.${i}.descanso`}
+                label="Descanso (segundos)"
+                keyboardType="numeric"
+              />
+
+              <SeriesDoExercicio control={control} exercicioIndex={i} />
+            </View>
+          ))}
+
+          <View className="mb-6">
+            <Button
+              title="+ Adicionar exercício"
+              variant="dashed"
+              onPress={() =>
+                append({ nome: '', descanso: '60', series: [{ repeticoes: '10', carga: '0' }] })
+              }
+            />
+          </View>
+
+          <Button title={rotuloSubmit} isLoading={isSubmitting} onPress={handleSubmit(onSubmit)} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Modal para iOS */}
+      {mostrarPickerIOS && (
+        <Modal transparent animationType="fade" visible={mostrarPickerIOS}>
+          <View className="flex-1 bg-black/50 justify-end">
+            <View className="bg-white dark:bg-[#1C1E3A] p-4 rounded-t-3xl">
+              <View className="flex-row justify-between items-center mb-3">
+                <TouchableOpacity onPress={() => setMostrarPickerIOS(false)}>
+                  <Text className="text-slate-500 font-bold">Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (callbackHorarioIOS) {
+                      const horas = String(dataHoraIOS.getHours()).padStart(2, '0');
+                      const minutos = String(dataHoraIOS.getMinutes()).padStart(2, '0');
+                      callbackHorarioIOS(`${horas}:${minutos}`);
+                    }
+                    setMostrarPickerIOS(false);
+                  }}
+                >
+                  <Text className="text-[#4F67ED] font-bold">Definir</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={dataHoraIOS}
+                mode="time"
+                is24Hour
+                display="spinner"
+                onValueChange={(_, d) => {
+                  if (d) setDataHoraIOS(d);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+    </>
   );
 }
