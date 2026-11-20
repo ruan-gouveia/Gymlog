@@ -28,6 +28,7 @@ import {
   obterEstatisticasPerfil,
   salvarMetaSemanal,
 } from '@/database';
+import { exportarRelatorioPdf } from '@/services/exportarPdf';
 import {
   atualizarPreferenciasESincronizarNotificacoes,
   useNotificacoesTreino,
@@ -157,6 +158,7 @@ export default function Perfil() {
   const [modalLembretesVisivel, setModalLembretesVisivel] = useState(false);
   const [modalSobreVisivel, setModalSobreVisivel] = useState(false);
   const [exportandoBackup, setExportandoBackup] = useState(false);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
 
   const carregarPerfil = useCallback(() => {
     try {
@@ -286,6 +288,36 @@ export default function Perfil() {
       showToast('Não foi possível exportar o backup JSON.', 'erro');
     } finally {
       setExportandoBackup(false);
+    }
+  };
+
+  const executarExportacaoPdf = async (destino: 'compartilhar' | 'salvar') => {
+    if (exportandoPdf) return;
+    setExportandoPdf(true);
+    try {
+      const resultado = await exportarRelatorioPdf(nomeExibicao, destino);
+      if (resultado.compartilhado) {
+        showToast(`Relatório PDF gerado (${resultado.totalTreinos} treinos)!`);
+      } else if (destino === 'salvar') {
+        showToast('PDF salvo na pasta escolhida!');
+      }
+    } catch (error) {
+      console.error('[Perfil] Erro ao exportar PDF:', error);
+      showToast('Não foi possível gerar o relatório em PDF.', 'erro');
+    } finally {
+      setExportandoPdf(false);
+    }
+  };
+
+  const handleExportarPdf = () => {
+    if (Platform.OS === 'android') {
+      Alert.alert('Relatório em PDF', 'O que você quer fazer?', [
+        { text: 'Compartilhar', onPress: () => void executarExportacaoPdf('compartilhar') },
+        { text: 'Salvar no aparelho', onPress: () => void executarExportacaoPdf('salvar') },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
+    } else {
+      void executarExportacaoPdf('compartilhar');
     }
   };
 
@@ -486,6 +518,34 @@ export default function Perfil() {
               <ActivityIndicator size="small" color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
             ) : (
               <Feather name="refresh-cw" size={17} color={ehEscuro ? '#6C7293' : '#94A3B8'} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Exportar relatório em PDF"
+            onPress={handleExportarPdf}
+            disabled={exportandoPdf}
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between py-3.5 border-b border-slate-100 dark:border-[#252852]/70"
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
+                <Feather name="file-text" size={18} color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
+              </View>
+              <View>
+                <Text className="text-[15px] font-bold text-slate-900 dark:text-white">
+                  Relatório em PDF
+                </Text>
+                <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8]">
+                  Exportar treinos e estatísticas
+                </Text>
+              </View>
+            </View>
+            {exportandoPdf ? (
+              <ActivityIndicator size="small" color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
+            ) : (
+              <Feather name="chevron-right" size={20} color={ehEscuro ? '#6C7293' : '#94A3B8'} />
             )}
           </TouchableOpacity>
 
