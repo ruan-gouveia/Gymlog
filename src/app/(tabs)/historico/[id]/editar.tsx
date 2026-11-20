@@ -12,6 +12,7 @@ import {
 } from '@/components/treino-edicao-form';
 import { buscarTreinoPorId } from '@/database/treinoConsultas';
 import { atualizarTreinoComExercicios } from '@/database/treinoRepository';
+import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 
@@ -39,6 +40,7 @@ export default function EditarTreino() {
     try {
       const { treino, exercicios } = formularioParaPayload(valores);
       atualizarTreinoComExercicios(treinoId, treino, exercicios);
+      void sincronizarNotificacoesAgendadas();
       showToast('Treino atualizado com sucesso!');
       router.back();
     } catch (error) {
