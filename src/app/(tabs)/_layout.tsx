@@ -8,7 +8,9 @@ export default function LayoutAbas() {
       tabBar={(props) => <BarraAbas {...props} />}
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         popToTopOnBlur: true,
+        lazy: true,
         tabBarStyle: { backgroundColor: '#12132A', borderTopWidth: 0 },
       }}
     >
