@@ -59,6 +59,7 @@ export function listarTreinos(): TreinoResumo[] {
       COALESCE(SUM(e.repeticoes * e.carga), 0) AS volume
     FROM treinos t
     LEFT JOIN exercicios e ON e.treino_id = t.id
+    WHERE t.status = 'concluido'
     GROUP BY t.id
     ORDER BY
       substr(t.data, 7, 4) || substr(t.data, 4, 2) || substr(t.data, 1, 2) DESC,
@@ -66,10 +67,7 @@ export function listarTreinos(): TreinoResumo[] {
   `
   );
 
-  return lista.map((t) => ({
-    ...t,
-    status: ajustarStatusTemporal(t.status, t.data, t.horario),
-  }));
+  return lista.filter((t) => t.status === 'concluido');
 }
 
 export type SerieDetalhe = {

@@ -619,7 +619,7 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
 
   if (
     sqlUpper.includes('COUNT(DISTINCT E.NOME) AS TOTAL_EXERCICIOS') &&
-    sqlUpper.includes("WHERE T.STATUS = 'CONCLUIDO'")
+    sqlUpper.includes('LIMIT ?')
   ) {
     const limite = Number(params[0] ?? 5);
     return estado.treinos
@@ -660,8 +660,9 @@ function executarGetAllSync<T>(sqlBruto: string, ...rawParams: unknown[]): T[] {
   }
 
   if (sqlUpper.includes('COUNT(DISTINCT E.NOME) AS TOTAL_EXERCICIOS')) {
+    const apenasConcluidos = sqlUpper.includes("WHERE T.STATUS = 'CONCLUIDO'");
     return estado.treinos
-      .slice()
+      .filter((t) => (apenasConcluidos ? t.status === 'concluido' : true))
       .sort(
         (a, b) => chaveDataIso(b.data).localeCompare(chaveDataIso(a.data)) || b.id - a.id
       )
