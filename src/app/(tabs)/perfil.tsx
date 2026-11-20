@@ -22,12 +22,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   ajustarStatusTemporal,
   db,
-  exportarBancoParaJson,
   obterConfiguracaoLembretes,
   obterConfiguracoesUsuario,
   obterEstatisticasPerfil,
   salvarMetaSemanal,
 } from '@/database';
+import { exportarRelatorioPdf } from '@/services/exportarPdf';
 import {
   atualizarPreferenciasESincronizarNotificacoes,
   useNotificacoesTreino,
@@ -134,7 +134,7 @@ export default function Perfil() {
 
   const isOnline = useSyncStore((state) => state.isOnline);
   const isSincronizando = useSyncStore((state) => state.isSincronizando);
-  const filaSync = useSyncStore((state) => state.fila);
+  const totalFilaSync = useSyncStore((state) => state.fila.length);
   const ultimaSincronizacao = useSyncStore((state) => state.ultimaSincronizacao);
 
   const nomeExibicao =
@@ -156,7 +156,7 @@ export default function Perfil() {
 
   const [modalLembretesVisivel, setModalLembretesVisivel] = useState(false);
   const [modalSobreVisivel, setModalSobreVisivel] = useState(false);
-  const [exportandoBackup, setExportandoBackup] = useState(false);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
 
   const carregarPerfil = useCallback(() => {
     try {
@@ -256,7 +256,7 @@ export default function Perfil() {
 
   const handleSincronizarAgora = async () => {
     if (isSincronizando) return;
-    if (filaSync.length === 0) {
+    if (totalFilaSync === 0) {
       showToast('Tudo sincronizado com a nuvem!');
       return;
     }
@@ -268,24 +268,33 @@ export default function Perfil() {
     }
   };
 
-  const handleExportarBackup = async () => {
-    if (exportandoBackup) return;
-    setExportandoBackup(true);
+  const executarExportacaoPdf = async (destino: 'compartilhar' | 'salvar') => {
+    if (exportandoPdf) return;
+    setExportandoPdf(true);
     try {
-      const resultado = await exportarBancoParaJson();
+      const resultado = await exportarRelatorioPdf(nomeExibicao, destino);
       if (resultado.compartilhado) {
-        showToast(`Backup JSON exportado (${resultado.totalTreinos} treinos)!`);
-      } else {
-        Alert.alert(
-          'Backup gerado',
-          `Arquivo JSON salvo localmente em:\n${resultado.uri}`
-        );
+        showToast(`Relatório PDF gerado (${resultado.totalTreinos} treinos)!`);
+      } else if (destino === 'salvar') {
+        showToast('PDF salvo na pasta escolhida!');
       }
     } catch (error) {
-      console.error('[Perfil] Erro ao exportar backup JSON:', error);
-      showToast('Não foi possível exportar o backup JSON.', 'erro');
+      console.error('[Perfil] Erro ao exportar PDF:', error);
+      showToast('Não foi possível gerar o relatório em PDF.', 'erro');
     } finally {
-      setExportandoBackup(false);
+      setExportandoPdf(false);
+    }
+  };
+
+  const handleExportarPdf = () => {
+    if (Platform.OS === 'android') {
+      Alert.alert('Relatório em PDF', 'O que você quer fazer?', [
+        { text: 'Compartilhar', onPress: () => void executarExportacaoPdf('compartilhar') },
+        { text: 'Salvar no aparelho', onPress: () => void executarExportacaoPdf('salvar') },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
+    } else {
+      void executarExportacaoPdf('compartilhar');
     }
   };
 
@@ -460,7 +469,7 @@ export default function Perfil() {
             <View className="flex-row items-center gap-3 flex-1 pr-2">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
                 <Feather
-                  name={!isOnline ? 'wifi-off' : filaSync.length > 0 ? 'upload-cloud' : 'check-circle'}
+                  name={!isOnline ? 'wifi-off' : totalFilaSync > 0 ? 'upload-cloud' : 'check-circle'}
                   size={18}
                   color={!isOnline ? '#D97706' : ehEscuro ? '#7C93FF' : '#5C7CFA'}
                 />
@@ -471,11 +480,11 @@ export default function Perfil() {
                 </Text>
                 <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8]" numberOfLines={1}>
                   {!isOnline
-                    ? `Offline · ${filaSync.length} na fila local`
+                    ? `Offline · ${totalFilaSync} na fila local`
                     : isSincronizando
-                    ? `Sincronizando fila (${filaSync.length} pendente(s))...`
-                    : filaSync.length > 0
-                    ? `${filaSync.length} operação(ões) na fila · Toque para enviar`
+                    ? `Sincronizando fila (${totalFilaSync} pendente(s))...`
+                    : totalFilaSync > 0
+                    ? `${totalFilaSync} operação(ões) na fila · Toque para enviar`
                     : ultimaSincronizacao
                     ? `Sincronizado · Último envio às ${ultimaSincronizacao}`
                     : 'Online · Sincronizado com o Supabase'}
@@ -491,26 +500,26 @@ export default function Perfil() {
 
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Exportar dados em JSON"
-            onPress={handleExportarBackup}
-            disabled={exportandoBackup}
+            accessibilityLabel="Exportar relatório em PDF"
+            onPress={handleExportarPdf}
+            disabled={exportandoPdf}
             activeOpacity={0.7}
             className="flex-row items-center justify-between py-3.5 border-b border-slate-100 dark:border-[#252852]/70"
           >
             <View className="flex-row items-center gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] dark:bg-[#252854]">
-                <Feather name="download" size={18} color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
+                <Feather name="file-text" size={18} color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
               </View>
               <View>
                 <Text className="text-[15px] font-bold text-slate-900 dark:text-white">
-                  Backup local
+                  Relatório em PDF
                 </Text>
                 <Text className="text-[12px] text-slate-400 dark:text-[#8E92B8]">
-                  Exportar dados (JSON)
+                  Exportar treinos e estatísticas
                 </Text>
               </View>
             </View>
-            {exportandoBackup ? (
+            {exportandoPdf ? (
               <ActivityIndicator size="small" color={ehEscuro ? '#7C93FF' : '#5C7CFA'} />
             ) : (
               <Feather name="chevron-right" size={20} color={ehEscuro ? '#6C7293' : '#94A3B8'} />

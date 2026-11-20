@@ -6,7 +6,7 @@ export const unstable_settings = {
 
 export default function LayoutEstatisticas() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="evolucao" />
     </Stack>

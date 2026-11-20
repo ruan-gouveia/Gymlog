@@ -10,7 +10,6 @@ import {
 import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'nativewind';
 import { useEffect, useMemo, useState } from 'react';
 import { LogBox, View } from 'react-native';
 
@@ -49,21 +48,33 @@ console.warn = (...args: unknown[]) => {
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
-function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
-  const { session, carregando: carregandoAuth } = useAuth();
+function GuardiaoRotasAuth({ inicializacaoConcluida }: { inicializacaoConcluida: boolean }) {
+  const { session } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const { colorScheme, setColorScheme } = useColorScheme();
-  const tema = useThemeStore((state) => state.tema);
 
   useEffect(() => {
-    const alvo = tema === 'system' ? 'system' : tema;
-    if (alvo === 'system' || colorScheme !== alvo) {
-      setColorScheme(alvo);
-    }
-  }, [tema, colorScheme, setColorScheme]);
+    if (!inicializacaoConcluida) return;
 
-  const ehEscuro = tema === 'system' ? colorScheme === 'dark' : tema === 'dark';
+    const emGrupoAuth = segments[0] === '(auth)';
+
+    if (!session && !emGrupoAuth) {
+      router.replace('/(auth)/login');
+    } else if (session && emGrupoAuth) {
+      router.replace('/(tabs)');
+    }
+
+    void SplashScreen.hideAsync().catch(() => {});
+  }, [inicializacaoConcluida, session, segments, router]);
+
+  return null;
+}
+
+function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
+  const { session, carregando: carregandoAuth } = useAuth();
+  const tema = useThemeStore((state) => state.tema);
+
+  const ehEscuro = tema === 'dark';
   const coresAtuais = ehEscuro ? coresEscuras : coresClaras;
 
   useEffect(() => {
@@ -94,20 +105,6 @@ function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
 
   const inicializacaoConcluida = bancoPronto && !carregandoAuth;
 
-  useEffect(() => {
-    if (!inicializacaoConcluida) return;
-
-    const emGrupoAuth = segments[0] === '(auth)';
-
-    if (!session && !emGrupoAuth) {
-      router.replace('/(auth)/login');
-    } else if (session && emGrupoAuth) {
-      router.replace('/(tabs)');
-    }
-
-    void SplashScreen.hideAsync().catch(() => {});
-  }, [inicializacaoConcluida, session, segments, router]);
-
   if (!inicializacaoConcluida) {
     return null;
   }
@@ -115,6 +112,7 @@ function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
   return (
     <View className={`flex-1 ${ehEscuro ? 'dark' : ''}`} style={{ backgroundColor: '#12132A' }}>
       <ThemeProvider value={temaNavegacao}>
+        <GuardiaoRotasAuth inicializacaoConcluida={inicializacaoConcluida} />
         <StatusBar style={ehEscuro ? 'light' : 'dark'} />
         <NavigationBar style="light" />
         <Stack
