@@ -76,7 +76,7 @@ const treinoSchema = z.object({
     .trim()
     .min(1, 'Obrigatório.')
     .regex(/^\d+$/, 'Apenas inteiros.')
-    .refine((v) => Number(v) > 0, { message: 'Maior que zero.' }),
+    .refine((v) => Number(v) >= 0, { message: 'Valor inválido.' }),
   grupo_muscular: z.string().trim().min(1, 'Informe o grupo muscular.'),
   observacoes: z.string().optional(),
   exercicios: z.array(exercicioSchema).min(1, 'Adicione pelo menos 1 exercício.'),
@@ -274,7 +274,6 @@ export function TreinoEdicaoForm({
             placeholder="Ex: Treino de Peito"
           />
 
-          {/* Data e Horário lado a lado */}
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Campo control={control} name="data" label="Data" placeholder="DD/MM/AAAA" />
@@ -314,7 +313,6 @@ export function TreinoEdicaoForm({
             </View>
           </View>
 
-          {/* Duração e Grupo Muscular lado a lado */}
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Campo
@@ -381,7 +379,6 @@ export function TreinoEdicaoForm({
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal para iOS */}
       {mostrarPickerIOS && (
         <Modal transparent animationType="fade" visible={mostrarPickerIOS}>
           <View className="flex-1 bg-black/50 justify-end">
