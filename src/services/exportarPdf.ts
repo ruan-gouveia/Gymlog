@@ -341,21 +341,25 @@ function montarHtml(nomeUsuario?: string): { html: string; totalTreinos: number 
 
 async function gerarArquivoPdf(nomeUsuario?: string) {
   const { html, totalTreinos } = montarHtml(nomeUsuario);
+  const dataSlug = new Date().toISOString().slice(0, 10);
+  const nomeArquivo = `gymlog-relatorio-${dataSlug}.pdf`;
+
+  if (Platform.OS === 'web') {
+    await Print.printAsync({ html });
+    return { uri: nomeArquivo, nomeArquivo, base64: null, totalTreinos };
+  }
 
   const { base64 } = await Print.printToFileAsync({ html, base64: true });
   if (!base64) {
     throw new Error('Não foi possível gerar o conteúdo do PDF.');
   }
 
-  const dataSlug = new Date().toISOString().slice(0, 10);
-  const nomeArquivo = `gymlog-relatorio-${dataSlug}.pdf`;
-  const uri = `${FileSystem.cacheDirectory}${nomeArquivo}`;
-
-  await FileSystem.writeAsStringAsync(uri, base64, {
+  const uriDestino = `${FileSystem.cacheDirectory}${nomeArquivo}`;
+  await FileSystem.writeAsStringAsync(uriDestino, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
-  return { uri, nomeArquivo, base64, totalTreinos };
+  return { uri: uriDestino, nomeArquivo, base64, totalTreinos };
 }
 
 export async function exportarRelatorioPdf(
@@ -364,7 +368,14 @@ export async function exportarRelatorioPdf(
 ): Promise<{ compartilhado: boolean; uri: string; totalTreinos: number }> {
   const { uri, nomeArquivo, base64, totalTreinos } = await gerarArquivoPdf(nomeUsuario);
 
+  if (Platform.OS === 'web') {
+    return { compartilhado: true, uri, totalTreinos };
+  }
+
   if (destino === 'salvar' && Platform.OS === 'android') {
+    if (!base64) {
+      throw new Error('Não foi possível gerar o conteúdo do PDF para salvamento.');
+    }
     const saf = FileSystem.StorageAccessFramework;
     const permissao = await saf.requestDirectoryPermissionsAsync();
     if (!permissao.granted) {
