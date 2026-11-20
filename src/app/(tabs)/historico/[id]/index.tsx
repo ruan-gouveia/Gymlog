@@ -93,7 +93,10 @@ export default function DetalhesTreino() {
 
         <View>
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">{treino.nome}</Text>
-          <Text className="text-xs font-medium text-slate-400 dark:text-[#8E92B8] mt-0.5">{formatarData(treino.data)}</Text>
+          <Text className="text-xs font-medium text-slate-400 dark:text-[#8E92B8] mt-0.5">
+            {formatarData(treino.data)}
+            {treino.horario ? ` · ${treino.horario}` : ''}
+          </Text>
         </View>
 
         <View className="flex-row gap-3">
