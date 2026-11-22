@@ -39,6 +39,7 @@ import {
 import { showToast } from '@/stores/toastStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { useThemeStore } from '@/stores/useThemeStore';
+import { capitalizarNome } from '@/utils/formatacao';
 
 type ProximoTreinoPreview = {
   nome: string;
@@ -137,10 +138,11 @@ export default function Perfil() {
   const totalFilaSync = useSyncStore((state) => state.fila.length);
   const ultimaSincronizacao = useSyncStore((state) => state.ultimaSincronizacao);
 
-  const nomeExibicao =
+  const nomeExibicao = capitalizarNome(
     (typeof user?.user_metadata?.nome === 'string' && user.user_metadata.nome.trim()) ||
-    user?.email?.split('@')[0] ||
-    'Usuário';
+      user?.email?.split('@')[0] ||
+      'Usuário'
+  );
   const emailExibicao = user?.email ?? 'usuario@gmail.com';
 
   useNotificacoesTreino(true);

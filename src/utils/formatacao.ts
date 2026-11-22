@@ -1,3 +1,20 @@
+const CONECTORES_NOME = new Set(['da', 'de', 'do', 'das', 'dos']);
+
+export function capitalizarNome(nome: string): string {
+  return nome
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((palavra, indice) => {
+      const minuscula = palavra.toLowerCase();
+      if (indice > 0 && CONECTORES_NOME.has(minuscula)) {
+        return minuscula;
+      }
+      return minuscula.charAt(0).toUpperCase() + minuscula.slice(1);
+    })
+    .join(' ');
+}
+
 export function formatarNumero(valor: number): string {
   const [inteiro, decimal] = String(Math.round(valor * 10) / 10).split('.');
   const comMilhar = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');

@@ -31,21 +31,27 @@ import {
 } from '@/database';
 import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
+import { capitalizarNome } from '@/utils/formatacao';
 
 export default function InicioDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
+  const nomeMetadata =
+    typeof user?.user_metadata?.nome === 'string' ? user.user_metadata.nome : '';
+  const nomeEmail = user?.email?.split('@')[0] ?? '';
+
   const nomeUsuario = useMemo(() => {
-    const metaNome =
-      typeof user?.user_metadata?.nome === 'string' ? user.user_metadata.nome.trim() : '';
-    if (metaNome) return metaNome;
+    const metaNome = nomeMetadata.trim();
+    if (metaNome) return capitalizarNome(metaNome);
     try {
       const configNome = obterConfiguracoesUsuario().nome_usuario?.trim();
-      if (configNome && configNome !== 'Usuário') return configNome;
-    } catch {}
-    return user?.email?.split('@')[0] || 'bom treino';
-  }, [user]);
+      if (configNome && configNome !== 'Usuário') return capitalizarNome(configNome);
+    } catch (error) {
+      console.warn('[Dashboard] Erro ao obter nome configurado:', error);
+    }
+    return nomeEmail ? capitalizarNome(nomeEmail) : 'bom treino';
+  }, [nomeEmail, nomeMetadata]);
 
   const dataHojeStr = useMemo(() => formatarDataBr(new Date()), []);
   const [dataSelecionada, setDataSelecionada] = useState<string>(dataHojeStr);
