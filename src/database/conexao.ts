@@ -5,7 +5,7 @@ export const NOME_BANCO = 'gymlog_v2.db';
 const cacheBancos = new Map<string, SQLiteDatabase>();
 let usuarioAtualId: string | null = null;
 
-function obterNomeArquivoBanco(userId: string | null): string {
+export function obterNomeArquivoBanco(userId: string | null = usuarioAtualId): string {
   if (!userId || !userId.trim()) {
     return 'gymlog_anon_v2.db';
   }

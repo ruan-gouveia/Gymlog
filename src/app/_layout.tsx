@@ -16,7 +16,6 @@ import { LogBox, View } from 'react-native';
 import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { db, initDatabase } from '@/database';
 import { useThemeStore } from '@/stores/useThemeStore';
 import {
   agendarForcarBarraNavegacaoEscura,
@@ -136,18 +135,13 @@ export default function LayoutRaiz() {
   const [bancoPronto, setBancoPronto] = useState(false);
 
   useEffect(() => {
-    async function preparar() {
-      try {
-        agendarForcarBarraNavegacaoEscura();
-        initDatabase(db);
-      } catch (error) {
-        console.error('[App] Falha ao inicializar o banco de dados:', error);
-      } finally {
-        setBancoPronto(true);
-      }
+    try {
+      agendarForcarBarraNavegacaoEscura();
+    } catch (error) {
+      console.error('[App] Falha ao configurar barra de navegação:', error);
+    } finally {
+      setBancoPronto(true);
     }
-
-    void preparar();
   }, []);
 
   return (

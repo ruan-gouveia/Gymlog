@@ -1,5 +1,10 @@
 import { NOME_BANCO, initDatabase, inicializarBanco, migrarBanco } from './initDatabase';
-export { db, definirUsuarioBancoLocal, obterUsuarioBancoLocal } from './conexao';
+export {
+  db,
+  definirUsuarioBancoLocal,
+  obterNomeArquivoBanco,
+  obterUsuarioBancoLocal,
+} from './conexao';
 
 export { NOME_BANCO, initDatabase, inicializarBanco, migrarBanco };
 export * from './tipos';

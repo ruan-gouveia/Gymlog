@@ -82,6 +82,14 @@ export function obterUsuarioBancoLocal(): string | null {
   return usuarioAtualId;
 }
 
+export function obterNomeArquivoBanco(userId: string | null = usuarioAtualId): string {
+  if (!userId || !userId.trim()) {
+    return 'gymlog_anon_v2.db';
+  }
+  const limpo = userId.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  return `gymlog_user_${limpo}.db`;
+}
+
 function persistirEstado(): void {
   if (emTransacao) return;
   if (typeof window === 'undefined' || !window.localStorage) return;

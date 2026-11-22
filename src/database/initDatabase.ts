@@ -1,7 +1,14 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { db as dbPadrao } from './conexao';
+import {
+  db as dbPadrao,
+  obterNomeArquivoBanco,
+  obterUsuarioBancoLocal,
+} from './conexao';
 
 export const NOME_BANCO = 'gymlog.db';
+
+const bancosInicializados = new Set<string>();
+const instanciasCustomizadasInicializadas = new WeakSet<object>();
 
 export const SCRIPT_CRIACAO_TABELAS = `
   PRAGMA foreign_keys = ON;
@@ -49,27 +56,39 @@ export function migrarBanco(db: SQLiteDatabase): void {
     if (!nomesColunasTreinos.has('status')) {
       try {
         db.runSync("ALTER TABLE treinos ADD COLUMN status TEXT NOT NULL DEFAULT 'concluido';");
-        console.log("[Migração] Coluna 'status' adicionada à tabela treinos.");
+        if (__DEV__) {
+          console.log("[Migração] Coluna 'status' adicionada à tabela treinos.");
+        }
       } catch (e) {
-        console.warn("[Migração] Aviso ao adicionar coluna 'status':", e);
+        if (__DEV__) {
+          console.warn("[Migração] Aviso ao adicionar coluna 'status':", e);
+        }
       }
     }
 
     if (!nomesColunasTreinos.has('horario')) {
       try {
         db.runSync('ALTER TABLE treinos ADD COLUMN horario TEXT;');
-        console.log("[Migração] Coluna 'horario' adicionada à tabela treinos.");
+        if (__DEV__) {
+          console.log("[Migração] Coluna 'horario' adicionada à tabela treinos.");
+        }
       } catch (e) {
-        console.warn("[Migração] Aviso ao adicionar coluna 'horario':", e);
+        if (__DEV__) {
+          console.warn("[Migração] Aviso ao adicionar coluna 'horario':", e);
+        }
       }
     }
 
     if (!nomesColunasTreinos.has('repetir')) {
       try {
         db.runSync("ALTER TABLE treinos ADD COLUMN repetir TEXT DEFAULT 'uma_vez';");
-        console.log("[Migração] Coluna 'repetir' adicionada à tabela treinos.");
+        if (__DEV__) {
+          console.log("[Migração] Coluna 'repetir' adicionada à tabela treinos.");
+        }
       } catch (e) {
-        console.warn("[Migração] Aviso ao adicionar coluna 'repetir':", e);
+        if (__DEV__) {
+          console.warn("[Migração] Aviso ao adicionar coluna 'repetir':", e);
+        }
       }
     }
 
@@ -79,9 +98,13 @@ export function migrarBanco(db: SQLiteDatabase): void {
     if (!nomesColunasExercicios.has('concluida')) {
       try {
         db.runSync('ALTER TABLE exercicios ADD COLUMN concluida INTEGER NOT NULL DEFAULT 0;');
-        console.log("[Migração] Coluna 'concluida' adicionada à tabela exercicios.");
+        if (__DEV__) {
+          console.log("[Migração] Coluna 'concluida' adicionada à tabela exercicios.");
+        }
       } catch (e) {
-        console.warn("[Migração] Aviso ao adicionar coluna 'concluida':", e);
+        if (__DEV__) {
+          console.warn("[Migração] Aviso ao adicionar coluna 'concluida':", e);
+        }
       }
     }
 
@@ -107,11 +130,15 @@ export function migrarBanco(db: SQLiteDatabase): void {
         db.runSync(
           'ALTER TABLE configuracoes_usuario ADD COLUMN antecedencia_lembrete INTEGER NOT NULL DEFAULT 30;'
         );
-        console.log(
-          "[Migração] Coluna 'antecedencia_lembrete' adicionada à tabela configuracoes_usuario."
-        );
+        if (__DEV__) {
+          console.log(
+            "[Migração] Coluna 'antecedencia_lembrete' adicionada à tabela configuracoes_usuario."
+          );
+        }
       } catch (e) {
-        console.warn("[Migração] Aviso ao adicionar coluna 'antecedencia_lembrete':", e);
+        if (__DEV__) {
+          console.warn("[Migração] Aviso ao adicionar coluna 'antecedencia_lembrete':", e);
+        }
       }
     }
 
@@ -123,7 +150,9 @@ export function migrarBanco(db: SQLiteDatabase): void {
     db.runSync('CREATE INDEX IF NOT EXISTS idx_treinos_data_status ON treinos(data, status);');
     db.runSync('CREATE INDEX IF NOT EXISTS idx_exercicios_treino_id ON exercicios(treino_id);');
 
-    console.log('[SQLite] Migrações e índices aplicados com sucesso.');
+    if (__DEV__) {
+      console.log('[SQLite] Migrações e índices aplicados com sucesso.');
+    }
   } catch (error) {
     console.error('[SQLite] Erro durante a execução das migrações:', error);
     throw error;
@@ -132,16 +161,35 @@ export function migrarBanco(db: SQLiteDatabase): void {
 
 export function initDatabase(dbInstancia?: SQLiteDatabase): void {
   const db = dbInstancia ?? dbPadrao;
+  const usandoBancoPadrao = !dbInstancia || dbInstancia === dbPadrao;
+  const chaveBanco = obterNomeArquivoBanco(obterUsuarioBancoLocal());
+
+  if (usandoBancoPadrao) {
+    if (bancosInicializados.has(chaveBanco)) {
+      return;
+    }
+  } else if (instanciasCustomizadasInicializadas.has(dbInstancia)) {
+    return;
+  }
 
   try {
     db.execSync('PRAGMA foreign_keys = ON;');
     db.execSync(SCRIPT_CRIACAO_TABELAS);
     migrarBanco(db);
-    console.log('[SQLite] Banco de dados e tabelas inicializados com sucesso.');
-    const tabelas = db.getAllSync(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
-    );
-    console.log('[SQLite] Tabelas encontradas no banco:', tabelas);
+
+    if (usandoBancoPadrao) {
+      bancosInicializados.add(chaveBanco);
+    } else {
+      instanciasCustomizadasInicializadas.add(dbInstancia);
+    }
+
+    if (__DEV__) {
+      console.log('[SQLite] Banco de dados e tabelas inicializados com sucesso.');
+      const tabelas = db.getAllSync(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+      );
+      console.log('[SQLite] Tabelas encontradas no banco:', tabelas);
+    }
   } catch (error) {
     console.error('[SQLite] Erro ao inicializar tabelas no banco de dados:', error);
     throw error;

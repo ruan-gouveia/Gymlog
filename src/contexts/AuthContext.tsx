@@ -38,14 +38,26 @@ const AuthContext = createContext<AuthContextData>({
   signOut: async () => {},
 });
 
+let ultimoUsuarioConfigurado: string | null | undefined = undefined;
+
 function configurarBancoParaSessao(sessao: Session | null): void {
   const userId = sessao?.user?.id ?? null;
+
+  if (ultimoUsuarioConfigurado === userId) {
+    return;
+  }
+  ultimoUsuarioConfigurado = userId;
+
   definirUsuarioBancoLocal(userId);
 
-  try {
-    initDatabase(db);
-  } catch (error) {
-    console.warn('[Auth] Aviso ao inicializar tabelas locais do usuário:', error);
+  if (userId || !isSupabaseConfigurado) {
+    try {
+      initDatabase(db);
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[Auth] Aviso ao inicializar tabelas locais do usuário:', error);
+      }
+    }
   }
 
   if (sessao?.user) {
