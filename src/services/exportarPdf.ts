@@ -10,7 +10,7 @@ import {
   obterExerciciosDisponiveis,
   obterResumoEstatisticas,
 } from '@/database/estatisticasConsultas';
-import { obterDadosParaBackup } from '@/database/perfilConsultas';
+import { obterDadosParaRelatorio } from '@/database/perfilConsultas';
 import type { Exercicio, StatusTreino } from '@/database/tipos';
 
 const COR = {
@@ -159,10 +159,10 @@ function htmlRosca(grupos: { grupo: string; quantidade: number; porcentagem: num
 
 
 function montarHtml(nomeUsuario?: string): { html: string; totalTreinos: number } {
-  const backup = obterDadosParaBackup();
+  const relatorio = obterDadosParaRelatorio();
   const resumo = obterResumoEstatisticas();
   const grupos = obterDistribuicaoGruposMusculares();
-  const usuario = nomeUsuario || backup.configuracoesUsuario.nome_usuario || 'Atleta';
+  const usuario = nomeUsuario || relatorio.configuracoesUsuario.nome_usuario || 'Atleta';
   const geradoEm = new Date().toLocaleString('pt-BR');
 
   const volumeSemanas = obterEvolucaoVolumeTreinos('semanas').map((p) => ({
@@ -214,8 +214,8 @@ function montarHtml(nomeUsuario?: string): { html: string; totalTreinos: number 
     ['Volume total', `${formatarNumero(resumo.volumeTotal)} kg`],
     ['Tempo total', formatarDuracao(resumo.tempoTotalMinutos)],
     ['Séries', formatarNumero(resumo.totalSeries)],
-    ['Recordes', formatarNumero(backup.resumo.totalRecordes)],
-    ['Sequência', `${backup.resumo.sequenciaSemanas} sem.`],
+    ['Recordes', formatarNumero(relatorio.resumo.totalRecordes)],
+    ['Sequência', `${relatorio.resumo.sequenciaSemanas} sem.`],
   ]
     .map(
       ([rotulo, valor]) => `
@@ -226,7 +226,7 @@ function montarHtml(nomeUsuario?: string): { html: string; totalTreinos: number 
     )
     .join('');
 
-  const blocosTreinos = backup.treinos
+  const blocosTreinos = relatorio.treinos
     .map((t) => {
       const status = STATUS_LABEL[t.status] ?? STATUS_LABEL.concluido;
       const exercicios = agruparExercicios(t.exercicios);
@@ -329,14 +329,14 @@ function montarHtml(nomeUsuario?: string): { html: string; totalTreinos: number 
 
     ${secaoGraficos}
 
-    <h2>Histórico de treinos (${backup.treinos.length})</h2>
+    <h2>Histórico de treinos (${relatorio.treinos.length})</h2>
     ${blocosTreinos || '<p class="vazio">Nenhum treino cadastrado.</p>'}
   </div>
   <div class="rodape">GymLog · Diário e Planejador de Treinos</div>
 </body>
 </html>`;
 
-  return { html, totalTreinos: backup.treinos.length };
+  return { html, totalTreinos: relatorio.treinos.length };
 }
 
 async function gerarArquivoPdf(nomeUsuario?: string) {

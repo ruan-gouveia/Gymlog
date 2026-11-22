@@ -1,6 +1,3 @@
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-
 import { db } from './conexao';
 import { obterConfiguracoesUsuario } from './configuracoesRepository';
 import { obterResumoSemana } from './inicioConsultas';
@@ -19,11 +16,11 @@ export type ConfiguracaoLembretes = {
   diasPadrao: string;
 };
 
-export type TreinoBackupItem = Treino & {
+export type TreinoRelatorioItem = Treino & {
   exercicios: Exercicio[];
 };
 
-export type BackupGymLog = {
+export type DadosRelatorioGymLog = {
   app: string;
   versao: string;
   exportadoEm: string;
@@ -37,7 +34,7 @@ export type BackupGymLog = {
   configuracoesUsuario: ConfiguracoesUsuario & {
     antecedencia_lembrete: number;
   };
-  treinos: TreinoBackupItem[];
+  treinos: TreinoRelatorioItem[];
 };
 
 let colunaAntecedenciaVerificada = false;
@@ -291,7 +288,7 @@ export function obterEstatisticasPerfil(metaSemanalParam?: number): Estatisticas
   };
 }
 
-export function obterDadosParaBackup(): BackupGymLog {
+export function obterDadosParaRelatorio(): DadosRelatorioGymLog {
   const configBase = obterConfiguracoesUsuario();
   const configLembretes = obterConfiguracaoLembretes();
   const estatisticas = obterEstatisticasPerfil(configBase.meta_semanal);
@@ -315,7 +312,7 @@ export function obterDadosParaBackup(): BackupGymLog {
     exerciciosPorTreino.set(ex.treino_id, lista);
   }
 
-  const treinosComExercicios: TreinoBackupItem[] = treinos.map((t) => ({
+  const treinosComExercicios: TreinoRelatorioItem[] = treinos.map((t) => ({
     ...t,
     exercicios: exerciciosPorTreino.get(t.id) ?? [],
   }));
@@ -337,63 +334,5 @@ export function obterDadosParaBackup(): BackupGymLog {
       antecedencia_lembrete: configLembretes.antecedenciaMinutos,
     },
     treinos: treinosComExercicios,
-  };
-}
-
-export async function exportarBancoParaJson(): Promise<{
-  compartilhado: boolean;
-  uri: string;
-  totalTreinos: number;
-}> {
-  const dados = obterDadosParaBackup();
-  const conteudoJson = JSON.stringify(dados, null, 2);
-  const dataSlug = new Date().toISOString().slice(0, 10);
-  const nomeArquivo = `gymlog-backup-${dataSlug}.json`;
-
-  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const blob = new Blob([conteudoJson], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', nomeArquivo);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    return {
-      compartilhado: true,
-      uri: nomeArquivo,
-      totalTreinos: dados.treinos.length,
-    };
-  }
-
-  const arquivo = new File(Paths.cache, nomeArquivo);
-  if (arquivo.exists) {
-    arquivo.delete();
-  }
-  arquivo.create();
-  arquivo.write(conteudoJson);
-
-  const uri = arquivo.uri;
-  const disponivel = await Sharing.isAvailableAsync();
-
-  if (disponivel) {
-    await Sharing.shareAsync(uri, {
-      mimeType: 'application/json',
-      dialogTitle: 'Exportar Backup do GymLog (JSON)',
-      UTI: 'public.json',
-    });
-    return {
-      compartilhado: true,
-      uri,
-      totalTreinos: dados.treinos.length,
-    };
-  }
-
-  return {
-    compartilhado: false,
-    uri,
-    totalTreinos: dados.treinos.length,
   };
 }
