@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -36,6 +35,7 @@ import {
 import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
 import { useAgendamentoStore } from '@/stores/useAgendamentoStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 
 const REGEX_DATA = /^\d{2}\/\d{2}\/\d{4}$/;
 const REGEX_HORARIO = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -194,7 +194,12 @@ export default function AgendarTreino() {
           const hojeVerificacao = new Date();
           hojeVerificacao.setHours(0, 0, 0, 0);
           if (selectedDate.getTime() < hojeVerificacao.getTime()) {
-            Alert.alert('Data inválida', 'Escolha a data de hoje ou uma data futura.');
+            mostrarAlerta({
+              titulo: 'Data inválida',
+              mensagem: 'Escolha a data de hoje ou uma data futura.',
+              variante: 'aviso',
+              icone: 'calendar',
+            });
             return;
           }
           const dia = String(selectedDate.getDate()).padStart(2, '0');
@@ -243,10 +248,12 @@ export default function AgendarTreino() {
                 0
               );
               if (dataHoraEscolhida.getTime() < agora.getTime()) {
-                Alert.alert(
-                  'Horário inválido',
-                  'Não é possível selecionar horários passados para o dia de hoje.'
-                );
+                mostrarAlerta({
+                  titulo: 'Horário inválido',
+                  mensagem: 'Não é possível selecionar horários passados para o dia de hoje.',
+                  variante: 'aviso',
+                  icone: 'clock',
+                });
                 return;
               }
             }
@@ -287,7 +294,12 @@ export default function AgendarTreino() {
 
     const dt = converterDataBr(data.data);
     if (!dt) {
-      Alert.alert('Data inválida', 'Informe uma data válida no formato DD/MM/AAAA.');
+      mostrarAlerta({
+        titulo: 'Data inválida',
+        mensagem: 'Informe uma data válida no formato DD/MM/AAAA.',
+        variante: 'aviso',
+        icone: 'calendar',
+      });
       return;
     }
 
@@ -296,10 +308,13 @@ export default function AgendarTreino() {
     const dataTreino = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0);
 
     if (dataTreino.getTime() < hoje.getTime()) {
-      Alert.alert(
-        'Data inválida',
-        'Não é possível agendar treinos em datas passadas. Escolha a data de hoje ou uma data futura.'
-      );
+      mostrarAlerta({
+        titulo: 'Data inválida',
+        mensagem:
+          'Não é possível agendar treinos em datas passadas. Escolha a data de hoje ou uma data futura.',
+        variante: 'aviso',
+        icone: 'calendar',
+      });
       return;
     }
 
@@ -314,10 +329,13 @@ export default function AgendarTreino() {
         0
       );
       if (dataHoraTreino.getTime() < agora.getTime()) {
-        Alert.alert(
-          'Horário inválido',
-          'Não é possível agendar treinos com horários passados para a data de hoje. Escolha um horário futuro.'
-        );
+        mostrarAlerta({
+          titulo: 'Horário inválido',
+          mensagem:
+            'Não é possível agendar treinos com horários passados para a data de hoje. Escolha um horário futuro.',
+          variante: 'aviso',
+          icone: 'clock',
+        });
         return;
       }
     }
@@ -362,7 +380,12 @@ export default function AgendarTreino() {
       router.replace('/(tabs)');
     } catch (error) {
       console.error('[Agendar Treino] Erro ao agendar treino:', error);
-      Alert.alert('Erro', 'Não foi possível agendar o treino. Tente novamente.');
+      mostrarAlerta({
+        titulo: 'Erro ao agendar',
+        mensagem: 'Não foi possível agendar o treino. Tente novamente.',
+        variante: 'perigo',
+        icone: 'alert-circle',
+      });
     }
   };
 

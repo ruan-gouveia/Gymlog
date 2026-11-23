@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgendaHorizontal } from '@/components/dashboard/AgendaHorizontal';
@@ -31,6 +31,7 @@ import {
 } from '@/database';
 import { sincronizarNotificacoesAgendadas } from '@/services/notificacoesService';
 import { showToast } from '@/stores/toastStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 import { capitalizarNome } from '@/utils/formatacao';
 
 export default function InicioDashboard() {
@@ -146,24 +147,30 @@ export default function InicioDashboard() {
   };
 
   const handleExcluirPendente = (treinoId: number) => {
-    Alert.alert('Excluir treino', 'Tem certeza que deseja excluir este treino pendente?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => {
-          try {
-            excluirTreino(treinoId);
-            void sincronizarNotificacoesAgendadas();
-            showToast('Treino excluído com sucesso.');
-            carregarDados();
-          } catch (error) {
-            console.error('[Dashboard] Erro ao excluir treino pendente:', error);
-            showToast('Erro ao excluir o treino.', 'erro');
-          }
+    mostrarAlerta({
+      titulo: 'Excluir treino',
+      mensagem: 'Tem certeza que deseja excluir este treino pendente?',
+      variante: 'perigo',
+      icone: 'trash-2',
+      botoes: [
+        { texto: 'Cancelar', estilo: 'cancel' },
+        {
+          texto: 'Excluir',
+          estilo: 'destructive',
+          onPress: () => {
+            try {
+              excluirTreino(treinoId);
+              void sincronizarNotificacoesAgendadas();
+              showToast('Treino excluído com sucesso.');
+              carregarDados();
+            } catch (error) {
+              console.error('[Dashboard] Erro ao excluir treino pendente:', error);
+              showToast('Erro ao excluir o treino.', 'erro');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    });
   };
 
   return (

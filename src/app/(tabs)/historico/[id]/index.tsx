@@ -1,11 +1,12 @@
 import { buscarTreinoPorId, type TreinoDetalhe } from '@/database/treinoConsultas';
 import { excluirTreino } from '@/database/treinoRepository';
 import { showToast } from '@/stores/toastStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 import { formatarData, formatarDuracao, formatarVolume, resumirSeries } from '@/utils/formatacao';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -41,23 +42,29 @@ export default function DetalhesTreino() {
   );
 
   function confirmarExclusao() {
-    Alert.alert('Excluir treino', 'Tem certeza que deseja excluir este treino?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => {
-          try {
-            excluirTreino(Number(id));
-            showToast('Treino excluído com sucesso!');
-            router.replace('/historico');
-          } catch (error) {
-            console.error('[Detalhes] Erro ao excluir treino:', error);
-            showToast('Erro ao excluir o treino.', 'erro');
-          }
+    mostrarAlerta({
+      titulo: 'Excluir treino',
+      mensagem: 'Tem certeza que deseja excluir este treino? Essa ação não poderá ser desfeita.',
+      variante: 'perigo',
+      icone: 'trash-2',
+      botoes: [
+        { texto: 'Cancelar', estilo: 'cancel' },
+        {
+          texto: 'Excluir',
+          estilo: 'destructive',
+          onPress: () => {
+            try {
+              excluirTreino(Number(id));
+              showToast('Treino excluído com sucesso!');
+              router.replace('/historico');
+            } catch (error) {
+              console.error('[Detalhes] Erro ao excluir treino:', error);
+              showToast('Erro ao excluir o treino.', 'erro');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    });
   }
 
   const cabecalho = (

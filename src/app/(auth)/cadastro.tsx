@@ -7,7 +7,6 @@ import { router } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,8 +20,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { atualizarConfiguracoesUsuario } from '@/database';
-import { isSupabaseConfigurado, supabase } from '@/services/supabase';
+import {
+  configurarLembrarDeMim,
+  isSupabaseConfigurado,
+  supabase,
+} from '@/services/supabase';
 import { showToast } from '@/stores/toastStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { dataBrParaDate, dateParaDataBr } from '@/utils/datas';
 import { mascararData } from '@/utils/mascaras';
@@ -195,10 +199,12 @@ export default function TelaCadastro() {
             calcularIdade(selectedDate) < IDADE_MINIMA ||
             selectedDate.getTime() > dataMaximaPermitida.getTime()
           ) {
-            Alert.alert(
-              'Idade mínima',
-              `Você precisa ter pelo menos ${IDADE_MINIMA} anos de idade para criar uma conta.`
-            );
+            mostrarAlerta({
+              titulo: 'Idade mínima',
+              mensagem: `Você precisa ter pelo menos ${IDADE_MINIMA} anos de idade para criar uma conta.`,
+              variante: 'aviso',
+              icone: 'calendar',
+            });
             return;
           }
           setErroData(null);
@@ -310,10 +316,13 @@ export default function TelaCadastro() {
     setErroGeral(null);
 
     const nomeLimpo = nome.trim();
+    const emailNormalizado = email.trim().toLowerCase();
 
     try {
+      await configurarLembrarDeMim(true, emailNormalizado);
+
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: emailNormalizado,
         password: senha,
         options: {
           data: {

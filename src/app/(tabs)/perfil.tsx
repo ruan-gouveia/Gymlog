@@ -4,7 +4,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { startTransition, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Modal,
   Platform,
@@ -37,6 +36,7 @@ import {
   sincronizarPerfilComNuvem,
 } from '@/services/sincronizacaoSupabase';
 import { showToast } from '@/stores/toastStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { capitalizarNome } from '@/utils/formatacao';
@@ -290,33 +290,56 @@ export default function Perfil() {
 
   const handleExportarPdf = () => {
     if (Platform.OS === 'android') {
-      Alert.alert('Relatório em PDF', 'O que você quer fazer?', [
-        { text: 'Compartilhar', onPress: () => void executarExportacaoPdf('compartilhar') },
-        { text: 'Salvar no aparelho', onPress: () => void executarExportacaoPdf('salvar') },
-        { text: 'Cancelar', style: 'cancel' },
-      ]);
+      mostrarAlerta({
+        titulo: 'Relatório em PDF',
+        mensagem:
+          'Escolha se deseja compartilhar o relatório completo de treinos ou salvar uma cópia no seu aparelho.',
+        variante: 'padrao',
+        icone: 'file-text',
+        botoes: [
+          {
+            texto: 'Compartilhar',
+            estilo: 'default',
+            icone: 'share-2',
+            onPress: () => void executarExportacaoPdf('compartilhar'),
+          },
+          {
+            texto: 'Salvar no aparelho',
+            estilo: 'secondary',
+            icone: 'download',
+            onPress: () => void executarExportacaoPdf('salvar'),
+          },
+          { texto: 'Cancelar', estilo: 'cancel' },
+        ],
+      });
     } else {
       void executarExportacaoPdf('compartilhar');
     }
   };
 
   const handleSairDaConta = () => {
-    Alert.alert('Sair da conta', 'Tem certeza que deseja sair da sua sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await signOut();
-            showToast('Sessão encerrada.');
-            router.replace('/(auth)/login');
-          } catch {
-            showToast('Não foi possível encerrar a sessão.', 'erro');
-          }
+    mostrarAlerta({
+      titulo: 'Sair da conta',
+      mensagem: 'Tem certeza que deseja encerrar a sua sessão atual no GymLog?',
+      variante: 'perigo',
+      icone: 'log-out',
+      botoes: [
+        { texto: 'Cancelar', estilo: 'cancel' },
+        {
+          texto: 'Sair',
+          estilo: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              showToast('Sessão encerrada.');
+              router.replace('/(auth)/login');
+            } catch {
+              showToast('Não foi possível encerrar a sessão.', 'erro');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    });
   };
 
   return (

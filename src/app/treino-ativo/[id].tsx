@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, BackHandler, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { BackHandler, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BarraDescansoFlutuante } from '@/components/treino-ativo/BarraDescansoFlutuante';
@@ -17,6 +17,7 @@ import {
   type TreinoDetalhe,
 } from '@/database';
 import { showToast } from '@/stores/toastStore';
+import { mostrarAlerta } from '@/stores/useAlertStore';
 import {
   DESCANSO_PADRAO_SEGUNDOS,
   calcularProgresso,
@@ -108,20 +109,26 @@ export default function TreinoAtivo() {
   }, [treinoId, iniciar, resetar]);
 
   const confirmarSaida = useCallback(() => {
-    Alert.alert('Sair do treino?', 'O progresso desta sessão será perdido.', [
-      { text: 'Continuar treinando', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: () => {
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace('/(tabs)');
-          }
+    mostrarAlerta({
+      titulo: 'Sair do treino?',
+      mensagem: 'O progresso desta sessão em andamento será perdido.',
+      variante: 'perigo',
+      icone: 'alert-triangle',
+      botoes: [
+        { texto: 'Continuar', estilo: 'cancel' },
+        {
+          texto: 'Sair',
+          estilo: 'destructive',
+          onPress: () => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    });
   }, []);
 
   useFocusEffect(
@@ -184,22 +191,30 @@ export default function TreinoAtivo() {
 
   const handleFinalizar = () => {
     if (progresso.seriesConcluidas === 0) {
-      Alert.alert('Nenhuma série concluída', 'Marque pelo menos uma série para finalizar o treino.');
+      mostrarAlerta({
+        titulo: 'Nenhuma série concluída',
+        mensagem: 'Marque pelo menos uma série concluída para finalizar o treino.',
+        variante: 'aviso',
+        icone: 'check-circle',
+      });
       return;
     }
 
     const pendentes = progresso.totalSeries - progresso.seriesConcluidas;
     if (pendentes > 0) {
-      Alert.alert(
-        'Finalizar treino?',
-        pendentes === 1
-          ? '1 série não marcada será descartada.'
-          : `${pendentes} séries não marcadas serão descartadas.`,
-        [
-          { text: 'Continuar treino', style: 'cancel' },
-          { text: 'Finalizar', onPress: finalizar },
-        ]
-      );
+      mostrarAlerta({
+        titulo: 'Finalizar treino?',
+        mensagem:
+          pendentes === 1
+            ? '1 série não marcada será descartada ao finalizar.'
+            : `${pendentes} séries não marcadas serão descartadas ao finalizar.`,
+        variante: 'aviso',
+        icone: 'check-circle',
+        botoes: [
+          { texto: 'Continuar', estilo: 'cancel' },
+          { texto: 'Finalizar', estilo: 'default', onPress: finalizar },
+        ],
+      });
       return;
     }
 
