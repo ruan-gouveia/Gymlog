@@ -1,6 +1,6 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,7 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { atualizarConfiguracoesUsuario } from '@/database';
-import { isSupabaseConfigurado, supabase } from '@/services/supabase';
+import {
+  configurarLembrarDeMim,
+  isSupabaseConfigurado,
+  obterEmailLembrado,
+  obterPreferenciaLembrar,
+  supabase,
+} from '@/services/supabase';
 import { showToast } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 
@@ -50,6 +56,25 @@ export default function TelaLogin() {
   const [erroEmail, setErroEmail] = useState<string | null>(null);
   const [erroSenha, setErroSenha] = useState<string | null>(null);
   const [erroGeral, setErroGeral] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarPreferenciasLogin() {
+      const [preferenciaLembrar, emailSalvo] = await Promise.all([
+        obterPreferenciaLembrar(),
+        obterEmailLembrado(),
+      ]);
+      if (!ativo) return;
+      setLembrarDeMim(preferenciaLembrar);
+      if (preferenciaLembrar && emailSalvo) {
+        setEmail(emailSalvo);
+      }
+    }
+    void carregarPreferenciasLogin();
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const validarFormulario = (): boolean => {
     let valido = true;
@@ -93,9 +118,13 @@ export default function TelaLogin() {
     setCarregando(true);
     setErroGeral(null);
 
+    const emailNormalizado = email.trim().toLowerCase();
+
     try {
+      await configurarLembrarDeMim(lembrarDeMim, emailNormalizado);
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: emailNormalizado,
         password: senha,
       });
 

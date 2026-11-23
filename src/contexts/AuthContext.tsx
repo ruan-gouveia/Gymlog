@@ -19,7 +19,11 @@ import {
   carregarDadosIniciaisDaNuvem,
   iniciarMonitoramentoRedeSync,
 } from '@/services/sincronizacaoSupabase';
-import { isSupabaseConfigurado, supabase } from '@/services/supabase';
+import {
+  isSupabaseConfigurado,
+  obterPreferenciaLembrar,
+  supabase,
+} from '@/services/supabase';
 import { useSyncStore } from '@/stores/useSyncStore';
 
 export type AuthContextData = {
@@ -102,6 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        const deveLembrar = await obterPreferenciaLembrar();
+        if (!deveLembrar) {
+          await supabase.auth.signOut();
+          if (ativo) {
+            configurarBancoParaSessao(null);
+            setSession(null);
+            setUser(null);
+          }
+          return;
+        }
+
         const { data, error } = await supabase.auth.getSession();
         if (error) {
           console.warn('[Auth] Falha ao restaurar sessão:', error.message);

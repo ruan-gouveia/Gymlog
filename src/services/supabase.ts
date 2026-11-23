@@ -25,24 +25,83 @@ if (!isSupabaseConfigurado && __DEV__) {
   }
 }
 
+const CHAVE_LEMBRAR_SESSAO = '@gymlog:auth_lembrar_de_mim';
+const CHAVE_EMAIL_LEMBRADO = '@gymlog:auth_email_salvo';
+
+const memoriaSessaoVolatil = new Map<string, string>();
+let persistirSessaoEmDisco = true;
+
+function podeUsarStorage(): boolean {
+  return !(Platform.OS === 'web' && typeof window === 'undefined');
+}
+
+export async function configurarLembrarDeMim(
+  lembrar: boolean,
+  email?: string
+): Promise<void> {
+  persistirSessaoEmDisco = lembrar;
+  if (!podeUsarStorage()) return;
+
+  try {
+    await AsyncStorage.setItem(CHAVE_LEMBRAR_SESSAO, lembrar ? 'true' : 'false');
+    if (lembrar && email?.trim()) {
+      await AsyncStorage.setItem(CHAVE_EMAIL_LEMBRADO, email.trim().toLowerCase());
+    } else if (!lembrar) {
+      await AsyncStorage.removeItem(CHAVE_EMAIL_LEMBRADO);
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[Supabase] Falha ao salvar preferência Lembrar de mim:', error);
+    }
+  }
+}
+
+export async function obterPreferenciaLembrar(): Promise<boolean> {
+  if (!podeUsarStorage()) return true;
+  try {
+    const valor = await AsyncStorage.getItem(CHAVE_LEMBRAR_SESSAO);
+    const lembrar = valor !== 'false';
+    persistirSessaoEmDisco = lembrar;
+    return lembrar;
+  } catch {
+    return true;
+  }
+}
+
+export async function obterEmailLembrado(): Promise<string> {
+  if (!podeUsarStorage()) return '';
+  try {
+    return (await AsyncStorage.getItem(CHAVE_EMAIL_LEMBRADO)) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 const storageSeguro = {
-  getItem: (key: string) => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') {
-      return Promise.resolve(null);
+  getItem: async (key: string): Promise<string | null> => {
+    const emMemoria = memoriaSessaoVolatil.get(key);
+    if (emMemoria !== undefined) {
+      return emMemoria;
+    }
+    if (!podeUsarStorage() || !persistirSessaoEmDisco) {
+      return null;
     }
     return AsyncStorage.getItem(key);
   },
-  setItem: (key: string, value: string) => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') {
-      return Promise.resolve();
+  setItem: async (key: string, value: string): Promise<void> => {
+    memoriaSessaoVolatil.set(key, value);
+    if (!podeUsarStorage()) return;
+
+    if (persistirSessaoEmDisco) {
+      await AsyncStorage.setItem(key, value);
+    } else {
+      await AsyncStorage.removeItem(key);
     }
-    return AsyncStorage.setItem(key, value);
   },
-  removeItem: (key: string) => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') {
-      return Promise.resolve();
-    }
-    return AsyncStorage.removeItem(key);
+  removeItem: async (key: string): Promise<void> => {
+    memoriaSessaoVolatil.delete(key);
+    if (!podeUsarStorage()) return;
+    await AsyncStorage.removeItem(key);
   },
 };
 
