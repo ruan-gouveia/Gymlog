@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { LogBox, View } from 'react-native';
 
+import { ModalAlerta } from '@/components/ui/ModalAlerta';
 import { Toast } from '@/components/ui/Toast';
 import { coresClaras, coresEscuras } from '@/constants/tema';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -125,6 +126,7 @@ function NavegacaoRaiz({ bancoPronto }: { bancoPronto: boolean }) {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="treino-ativo/[id]" options={{ gestureEnabled: false }} />
         </Stack>
+        <ModalAlerta />
         <Toast />
       </ThemeProvider>
     </View>
