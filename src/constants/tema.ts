@@ -25,31 +25,3 @@ export const coresEscuras = {
   sucesso: '#4ADE9B',
   perigo: '#F2677A',
 } as const;
-
-export function obterCoresTema(ehEscuro: boolean) {
-  return ehEscuro ? coresEscuras : coresClaras;
-}
-
-export const cores = coresClaras;
-
-export const espacamento = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-} as const;
-
-export const raios = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  pill: 999,
-} as const;
-
-export const tipografia = {
-  titulo: 26,
-  subtitulo: 18,
-  corpo: 15,
-  legenda: 12,
-} as const;
